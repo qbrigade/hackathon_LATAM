@@ -44,8 +44,8 @@ class ConvLSTMCell(nn.Module):
 
     def init_hidden(self, batch_size, image_size):
         height, width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device),
-                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
+        return (torch.zeros(batch_size, self.hidden_dim, height, width),
+                torch.zeros(batch_size, self.hidden_dim, height, width))
 
 class ConvLSTM(nn.Module):
     #ConvLSTM model
@@ -148,8 +148,7 @@ class FireSpreadPredictor(nn.Module):
 
 # Training function
 def train_model(model, train_loader, epochs=5, learning_rate=0.0001):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
+    model.to()
     
     criterion = nn.MSELoss()  # Mean Squared Error for regression
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -161,8 +160,8 @@ def train_model(model, train_loader, epochs=5, learning_rate=0.0001):
         epoch_loss = 0
         for batch_idx, sequences in enumerate(train_loader):
             # Input: first 4 time steps, Target: last time step
-            inputs = sequences[:, :-1, :, :, :].to(device)  # First 4 frames
-            targets = sequences[:, -1, :, :, :].to(device)  # Last frame (ground truth)
+            inputs = sequences[:, :-1, :, :, :].to()  # First 4 frames
+            targets = sequences[:, -1, :, :, :].to()  # Last frame (ground truth)
             
             optimizer.zero_grad()
             
