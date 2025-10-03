@@ -46,25 +46,6 @@
 - [Acknowledgments](#acknowledgments)
 - [Contact](#contact)
 
----
-
-## 🎮 Live Demo
-
-**Experience QWB in action!** Visit our interactive web application:
-
-### 🌐 **[qbrigade.pages.dev](https://qbrigade.pages.dev/)**
-
-Our live demo showcases:
-- 🗺️ **Interactive Fire Visualization** - Real-time fire spread mapping
-- 🧠 **AI Prediction Display** - ConvLSTM model predictions in action
-- ⚛️ **Quantum Optimization Results** - Resource allocation strategies
-- 📊 **Dashboard & Analytics** - Performance metrics and insights
-- 🎯 **Scenario Simulation** - Test different firefighting strategies
-
-*The demo is deployed on Cloudflare Pages and updated continuously with the latest features.*
-
----
-
 ## 🌍 Overview
 
 **Quantum Wildfire Brigade (QWB)** is an innovative solution developed to address wildfire containment and management using quantum computing principles combined with deep learning. This project aims to contribute to the **United Nations Sustainable Development Goals (SDGs)** 13 (Climate Action) and 15 (Life on Land).
