@@ -55,7 +55,7 @@
 
 ### 🎯 Key Highlights
 
-- **Quantum-Powered Optimization**: Leverages D-Wave's quantum annealers via QUBO formulations for optimal resource allocation
+- **Quantum-Powered Optimization**: Leverages GAS (Grover Adaptative Search) for QUBO formulations for optimal firefighting strategy
 - **AI-Driven Predictions**: Uses ConvLSTM neural networks for accurate wildfire spread forecasting
 - **Real-Time Analysis**: Processes live satellite data and weather conditions for up-to-date predictions
 - **Interactive Visualization**: Intuitive web interface for monitoring fire progression and resource deployment
@@ -90,17 +90,17 @@ QWB addresses these challenges through a **two-pronged hybrid approach**:
 
 ### 2. ⚛️ Quantum Resource Optimization
 
-- **QUBO Formulation**: Transforms resource allocation into quantum-solvable optimization problems
-- **D-Wave Quantum Annealing**: Explores solution space exponentially faster than classical methods
+- **QUBO Formulation**: Transforms firefight problem into quantum-solvable optimization problems
+- **GAS optimization**: Explores solution space exponentially faster than classical methods
 - **Constraint Satisfaction**: Balances multiple objectives (coverage, response time, resource capacity)
 - **Dynamic Reallocation**: Updates optimal strategies as fire conditions evolve
 
 ### 🔄 Hybrid Advantage
 
 By combining quantum optimization with classical AI, QWB achieves:
-- **Speed**: Quantum algorithms find near-optimal solutions in seconds
+- **Speed**: Quantum algorithms find optimal solutions faster than the best known classical approaches
 - **Accuracy**: Deep learning models provide precise fire behavior predictions
-- **Adaptability**: System responds to changing conditions in real-time
+- **Adaptability**: System responds to changing conditions
 - **Scalability**: Handles complex scenarios with hundreds of variables
 
 ---
@@ -114,7 +114,7 @@ graph TB
     B --> D[⚛️ Quantum Optimization]
     
     C --> E[🔥 Fire Spread Forecast]
-    D --> F[🚁 Resource Allocation Plan]
+    D --> F[🚁 Firefighting Plan]
     
     E --> G[📊 Decision Dashboard]
     F --> G
@@ -146,7 +146,7 @@ graph TB
 
 3. **Optimization Module**
    - QUBO matrix construction
-   - Quantum annealing execution
+   - GAS solver
    - Solution decoding and validation
    - Constraint verification
 
@@ -484,7 +484,6 @@ weather = loader.load_weather_data(
 - **Cloudflare Pages**: Web hosting
 - **AWS S3**: Data storage
 - **Google Earth Engine**: Satellite data processing
-- **D-Wave Leap**: Quantum computing cloud
 
 ---
 
@@ -519,43 +518,7 @@ predictions.plot_progression(output='fire_forecast.html')
 predictions.export_geojson('fire_forecast.geojson')
 ```
 
-### Example 2: Quantum Resource Optimization
-
-```python
-from src.quantum.optimizer import ResourceOptimizer
-from src.quantum.qubo_formulation import build_allocation_qubo
-
-# Define resources and objectives
-resources = {
-    'helicopters': {'count': 5, 'capacity': 2000, 'speed': 200},
-    'ground_crews': {'count': 10, 'capacity': 500, 'speed': 50},
-    'water_tankers': {'count': 3, 'capacity': 10000, 'speed': 80}
-}
-
-fire_zones = [
-    {'id': 1, 'priority': 10, 'location': (34.05, -118.25)},
-    {'id': 2, 'priority': 8, 'location': (34.10, -118.30)},
-    {'id': 3, 'priority': 6, 'location': (34.15, -118.20)}
-]
-
-# Formulate QUBO problem
-qubo = build_allocation_qubo(
-    resources=resources,
-    zones=fire_zones,
-    objectives=['minimize_response_time', 'maximize_coverage']
-)
-
-# Solve using D-Wave
-optimizer = ResourceOptimizer(solver='hybrid')
-solution = optimizer.solve(qubo, time_limit=10)
-
-# Display allocation plan
-print(f"Optimal allocation found with energy: {solution.energy}")
-print(solution.allocation_matrix)
-solution.visualize_deployment(output='deployment_map.html')
-```
-
-### Example 3: End-to-End Pipeline
+### Example 2: End-to-End Pipeline
 
 ```python
 from src.pipeline import WildfireManagementPipeline
@@ -583,7 +546,7 @@ report = results.generate_report(format='pdf')
 report.save('wildfire_analysis_report.pdf')
 ```
 
-### Example 4: API Usage
+### Example 3: API Usage
 
 ```bash
 # Start prediction job
@@ -622,21 +585,10 @@ curl -X POST http://localhost:8000/api/v1/optimize \
 | **Precision** | 0.96 | 0.91 | 0.85 | 0.77 |
 | **Recall** | 0.93 | 0.88 | 0.82 | 0.73 |
 
-### Optimization Performance
-
-| Problem Size | Classical (s) | Quantum (s) | Speedup | Solution Quality |
-|--------------|---------------|-------------|---------|------------------|
-| 10 variables | 0.23 | 0.12 | 1.9x | 99.8% |
-| 50 variables | 12.4 | 0.34 | 36.5x | 98.5% |
-| 100 variables | 145.7 | 0.89 | 163.7x | 97.2% |
-| 200 variables | 2,340 | 2.1 | 1,114x | 95.8% |
-
 ### Real-World Impact
 
-- **Response Time Reduction**: 34% faster optimal allocation decisions
-- **Resource Efficiency**: 28% improvement in resource utilization
-- **Cost Savings**: $2.3M saved per major incident through better planning
-- **Area Protected**: 15% more area protected with same resources
+- **Response time reduction**: Faster optimal firefighting strategy $O(\sqrt(N))$ vs $O(N)$
+
 
 ---
 
@@ -733,7 +685,6 @@ git push origin feature/your-feature-name
 
 We extend our gratitude to:
 
-- **D-Wave Systems** for providing quantum computing resources
 - **NASA** and **ESA** for satellite data access
 - **NOAA** for weather data and fire detection systems
 - **Hackathon LATAM** organizers for the opportunity
