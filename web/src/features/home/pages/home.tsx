@@ -1,7 +1,7 @@
 import { Layout } from '@common/components/layout';
 import { Sidebar } from '@common/components/sidebar';
 import { useLocation } from 'wouter';
-import logo from '@assets/images/logo_v2.png';
+import logo from '@assets/images/logo_v3.png';
 import heroBanner from '/readme_banner.png';
 
 export function HomePage() {

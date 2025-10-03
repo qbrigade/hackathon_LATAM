@@ -3,9 +3,10 @@ import { Sidebar } from '@common/components/sidebar';
 import { Map, Marker, useMap } from '@vis.gl/react-google-maps';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import flameSmall from '@assets/images/icons/flame_small.gif';
+import firewallIcon from '@assets/images/firewall.png';
 import logo from '@assets/images/logo_v3.png';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { WILDFIRE_DETECTED_PERIMETER } from '@common/constants';
+import { WILDFIRE_DETECTED_PERIMETER, FIREWALLS_LOCATIONS } from '@common/constants';
 
 export type MapConfig = {
   id: string;
@@ -23,7 +24,8 @@ const MapTypeId = {
 };
 
 // Start far from the fire area to nudge users to engage (e.g., Denver)
-const FAR_START_COORDS: google.maps.LatLngLiteral = { lat: 46.837235, lng: -109.477070 };
+// const FAR_START_COORDS: google.maps.LatLngLiteral = { lat: 46.837235, lng: -109.477070 };
+const FAR_START_COORDS: google.maps.LatLngLiteral = { lat: 47.163741, lng: -109.559723 };
 
 const MAP_CONFIGS: MapConfig[] = [
   {
@@ -98,8 +100,9 @@ export function MapPage() {
   const [processing, setProcessing] = useState<boolean>(false);
   const [fireVectors, setFireVectors] = useState<Array<{ start: google.maps.LatLngLiteral; end: google.maps.LatLngLiteral }>>([]);
   const [actionPlans, setActionPlans] = useState<Array<{ at: google.maps.LatLngLiteral; summary: string }>>([]);
+  const [firewalls, setFirewalls] = useState<google.maps.LatLngLiteral[]>([]);
   const cameraControllerRef = useRef<CameraControllerHandle | null>(null);
-  const [selectedFireId, setSelectedFireId] = useState<string | null>(null);
+  const [selectedFireId, setSelectedFireId] = useState<string | null>('wf-1');
   const [activeTab, setActiveTab] = useState<'controls' | 'results'>('controls');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
@@ -298,6 +301,10 @@ export function MapPage() {
         summary: `Plan ${idx + 1}: Establish 30m firewall ahead of projected spread; stage crew downwind.`,
       }));
       setActionPlans(plans);
+
+      // Convert FIREWALLS_LOCATIONS to LatLngLiteral format
+      const firewallLocations = (FIREWALLS_LOCATIONS as Array<[number, number]>).map(([lat, lng]) => ({ lat, lng }));
+      setFirewalls(firewallLocations);
 
       // Switch to results tab after processing
       setActiveTab('results');
@@ -555,6 +562,20 @@ export function MapPage() {
                     }}
                   />
                 ))}
+                {/* Firewall locations */}
+                {firewalls.map((fw, i) => (
+                  <Marker
+                    key={`firewall-${i}`}
+                    position={fw}
+                    clickable={false}
+                    optimized={false}
+                    icon={{
+                      url: firewallIcon,
+                      anchor: makeGPoint(16, 16),
+                      scaledSize: makeGSize(32, 32),
+                    }}
+                  />
+                ))}
                 {/* Wildfire detection radar at perimeter centroid - geographic circle */}
                 {perimeterCentroid && radarRadius > 0 && (
                   <GCircle
@@ -569,7 +590,7 @@ export function MapPage() {
                 )}
               </Map>
             </div>
-            
+
             {/* Fullscreen Processing Overlay */}
             {processing && (
               <div className='pointer-events-none fixed inset-0 z-[10000] flex items-center justify-center'>
@@ -891,19 +912,19 @@ export function MapPage() {
                         <h3 className='text-lg font-bold mb-2' style={{ color: '#0f172a' }}>Analysis Results</h3>
                         <p className='text-sm' style={{ color: '#6b7280' }}>Quantum-optimized wildfire containment strategy</p>
                       </div>
-                      
+
                       {/* Summary Cards */}
                       <div className='grid grid-cols-2 gap-3 mb-4'>
                         <div className='rounded-lg border p-3' style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
                           <div className='text-xs font-medium mb-1' style={{ color: '#991b1b' }}>Fire Spread Risk</div>
                           <div className='text-2xl font-bold' style={{ color: '#dc2626' }}>High</div>
                         </div>
-                        <div className='rounded-lg border p-3' style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
-                          <div className='text-xs font-medium mb-1' style={{ color: '#14532d' }}>Containment Plan</div>
-                          <div className='text-2xl font-bold' style={{ color: '#16a34a' }}>Ready</div>
+                        <div className='rounded-lg border p-3' style={{ backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
+                          <div className='text-xs font-medium mb-1' style={{ color: '#1e3a8a' }}>Firewalls</div>
+                          <div className='text-2xl font-bold' style={{ color: '#2563eb' }}>{firewalls.length}</div>
                         </div>
                       </div>
-                      
+
                       {/* Fire Vectors */}
                       <div className='mb-4 rounded-lg border p-3' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
                         <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Fire Propagation Analysis</div>
@@ -922,7 +943,22 @@ export function MapPage() {
                           )}
                         </div>
                       </div>
-                      
+
+                      {/* Firewall Deployment */}
+                      <div className='mb-4 rounded-lg border p-3' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
+                        <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Firewall Deployment</div>
+                        <div className='text-xs mb-2' style={{ color: '#6b7280' }}>{firewalls.length} firewall locations strategically placed</div>
+                        <div className='p-2 rounded text-xs' style={{ backgroundColor: '#eff6ff', borderLeft: '3px solid #2563eb' }}>
+                          <div className='font-medium mb-1' style={{ color: '#1e3a8a' }}>Strategic Positioning</div>
+                          <div style={{ color: '#374151' }}>
+                            Firewalls have been optimally positioned to create containment barriers and prevent fire spread to critical areas.
+                          </div>
+                          <div className='mt-2 text-[10px]' style={{ color: '#6b7280' }}>
+                            View map markers for exact locations
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Action Plans */}
                       <div className='mb-4 rounded-lg border p-3' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
                         <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Recommended Actions</div>
@@ -938,7 +974,7 @@ export function MapPage() {
                           ))}
                         </div>
                       </div>
-                      
+
                       {/* Back to Map Button */}
                       <button
                         className='w-full rounded-lg border px-4 py-2 text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors'

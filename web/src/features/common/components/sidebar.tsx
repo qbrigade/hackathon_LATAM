@@ -1,7 +1,7 @@
 import { useLocation, Link } from 'wouter';
 import { Home, Map, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import logo from '@assets/images/logo_no_text.png';
+import logo from '@assets/images/logo_v3.png';
 
 type NavItem = {
   name: string;
