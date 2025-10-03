@@ -14,7 +14,6 @@ class ConvLSTMCell(nn.Module):
         super().__init__()
         self.hidden_dim = hidden_dim
         padding = kernel_size // 2
-        # in_channels = input_dim + hidden_dim  (input + h_t-1)
         self.conv = nn.Conv2d(input_dim + hidden_dim, 4 * hidden_dim,
                               kernel_size=kernel_size, padding=padding, bias=bias)
 
@@ -88,7 +87,7 @@ class FireSpreadPredictor(nn.Module):
             hidden_dims=hidden_dims,
             kernel_size=3,
             output_len=pred_steps,
-            output_activation='sigmoid'  # keep if your checkpoint was trained this way
+            output_activation='sigmoid'  
         )
 
     def forward(self, x):
@@ -339,16 +338,14 @@ def save_adjacency_sparse(rows, cols, data, shape, path_npz="adjacency.npz", pat
 
 def main():
     # ---- CONFIG ----
-    DEVICE = torch.device("cpu")  # change to cuda/mps if available
+    DEVICE = torch.device("cpu") 
     DATA_FOLDER = "ml/data/sample_data"
-    MODEL_PATH = "fire_spread_model.pth"  # adjust if you saved elsewhere
+    MODEL_PATH = "fire_spread_model.pth" 
     SEQ_LEN = 5
-    DISK_CHANNELS = [22]          # use band 22 (0-based) from disk (your "23rd" band)
+    DISK_CHANNELS = [22]         
     RESIZE_TO = (256, 256)
-    # Your checkpoint was trained with 3 input channels and predicts 3 channels.
-    # We'll load a 3-ch model and duplicate the single band to 3.
     CHECKPOINT_INPUT_CHANNELS = 3
-    OUTPUT_CHANNEL_INDEX = 0      # which of the 3 predicted channels to visualize
+    OUTPUT_CHANNEL_INDEX = 0     
 
     # ---- Model ----
     model = load_model(MODEL_PATH, device=DEVICE, input_channels=CHECKPOINT_INPUT_CHANNELS)
@@ -367,7 +364,6 @@ def main():
     # ---- One sequence ----
     for batch_idx, sequence in enumerate(loader):
         print(f"\nProcessing sequence {batch_idx+1}")
-        # sequence: (B, T, C=1, H, W) -> duplicate channels to 3 for the 3-ch model
         sequence = sequence.repeat(1, 1, CHECKPOINT_INPUT_CHANNELS, 1, 1)  # (B,T,3,H,W)
 
         input_seq = sequence[:, :SEQ_LEN-1]  # first T-1 frames as input
@@ -377,12 +373,10 @@ def main():
 
         rows, cols, data, shape = build_adjacency_coo(prob_2d, bidirectional=False)
 
-        # choose file names you like
         adj_npz = f"adjacency_seq_{batch_idx+1}.npz"
         edges_csv = f"adjacency_seq_{batch_idx+1}_edges.csv"  # fallback if SciPy missing
         save_adjacency_sparse(rows, cols, data, shape, path_npz=adj_npz, path_edges_csv=edges_csv)
 
-        # (optional) also save node features (probabilities) as a flat vector
         np.save(f"node_probs_seq_{batch_idx+1}.npy", prob_2d.reshape(-1))
         print(f"[NODES] saved node probabilities to node_probs_seq_{batch_idx+1}.npy")
 
