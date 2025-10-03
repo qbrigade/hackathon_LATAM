@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <em>A cutting-edge hybrid quantum-classical system for real-time wildfire spread prediction and optimal resource allocation.</em>
+  <em>A cutting-edge hybrid quantum-classical system for wildfire spread prediction and optimal resource allocation.</em>
 </p>
 
 <p align="center">
@@ -51,12 +51,12 @@
 
 ## 🌟 Overview
 
-**Quantum Wildfire Brigade (QWB)** is an innovative hybrid quantum-classical platform that combines advanced AI prediction models with quantum computing optimization to revolutionize wildfire management. Our system provides real-time fire spread forecasting and optimal resource allocation, helping emergency responders make critical decisions faster and more effectively.
+**Quantum Wildfire Brigade (QWB)** is an innovative hybrid quantum-classical platform that combines advanced AI prediction models with quantum computing optimization to revolutionize wildfire management. Our system provides fire spread forecasting and optimal resource allocation, helping emergency responders make critical decisions faster and more effectively.
 
 ### 🎯 Key Highlights
 
 - **Quantum-Powered Optimization**: Leverages GAS (Grover Adaptative Search) for QUBO formulations for optimal firefighting strategy
-- **AI-Driven Predictions**: Uses ConvLSTM neural networks for accurate wildfire spread forecasting
+- **AI-Driven Predictions**: Uses ConvLSTM neural network for accurate wildfire spread forecasting
 - **Real-Time Analysis**: Processes live satellite data and weather conditions for up-to-date predictions
 - **Interactive Visualization**: Intuitive web interface for monitoring fire progression and resource deployment
 - **Scalable Architecture**: Modular design supporting multiple regions and fire scenarios simultaneously
@@ -83,7 +83,7 @@ QWB addresses these challenges through a **two-pronged hybrid approach**:
 
 ### 1. 🧠 AI-Powered Fire Spread Prediction
 
-- **ConvLSTM Neural Networks**: Captures spatial-temporal patterns in fire progression
+- **ConvLSTM Neural Network**: Captures spatial-temporal patterns in fire progression
 - **Multi-Modal Data Integration**: Combines satellite imagery, weather data, terrain maps, and vegetation indices
 - **Probabilistic Forecasting**: Generates confidence intervals and multiple scenarios
 - **Adaptive Learning**: Continuously improves predictions based on observed fire behavior
@@ -141,8 +141,6 @@ graph TB
 2. **Prediction Module**
    - Spatiotemporal feature extraction
    - ConvLSTM forward propagation
-   - Ensemble model aggregation
-   - Uncertainty quantification
 
 3. **Optimization Module**
    - QUBO matrix construction
@@ -481,20 +479,9 @@ weather = loader.load_weather_data(
 
 ## 🧰 Technologies Used
 
-### Machine Learning & AI
-
-- **PyTorch**: Deep learning framework
-- **TensorFlow**: Alternative DL framework
-- **scikit-learn**: Classical ML algorithms
-- **OpenCV**: Image processing
-- **GDAL**: Geospatial data processing
-
 ### Quantum Computing
 
-- **D-Wave Ocean SDK**: Quantum annealing platform
-- **dimod**: Discrete optimization modeling
-- **dwave-system**: Hardware interaction
-- **hybrid**: Hybrid quantum-classical solvers
+- **GAS**: Qiskit Implementation for Grover Adaptative Search 
 
 ### Backend
 
@@ -511,21 +498,6 @@ weather = loader.load_weather_data(
 - **Leaflet**: Interactive mapping
 - **D3.js**: Data visualization
 - **Tailwind CSS**: Utility-first CSS
-
-### DevOps & Infrastructure
-
-- **Docker**: Containerization
-- **Kubernetes**: Container orchestration
-- **GitHub Actions**: CI/CD pipeline
-- **Prometheus**: Monitoring
-- **Grafana**: Metrics visualization
-
-### Cloud Services
-
-- **Cloudflare Pages**: Web hosting
-- **AWS S3**: Data storage
-- **Google Earth Engine**: Satellite data processing
-
 ---
 
 ## 🚀 Usage Examples
@@ -614,23 +586,9 @@ curl -X POST http://localhost:8000/api/v1/optimize \
 
 ---
 
-## 📊 Results & Benchmarks
-
-### Prediction Accuracy
-
-| Metric | 1-hour | 6-hour | 12-hour | 24-hour |
-|--------|--------|--------|---------|---------|
-| **MAE (km²)** | 0.12 | 0.45 | 1.23 | 2.87 |
-| **RMSE (km²)** | 0.18 | 0.67 | 1.89 | 4.21 |
-| **IoU Score** | 0.94 | 0.87 | 0.79 | 0.68 |
-| **Precision** | 0.96 | 0.91 | 0.85 | 0.77 |
-| **Recall** | 0.93 | 0.88 | 0.82 | 0.73 |
-
 ### Real-World Impact
 
 - **Response time reduction**: Faster optimal firefighting strategy $O(\sqrt(N))$ vs $O(N)$
-
-
 ---
 
 ## 🤝 Contributing
@@ -701,18 +659,6 @@ git push origin feature/your-feature-name
 
 ---
 
-## 👥 Team
-
-**Quantum Wildfire Brigade** is developed by a passionate team of researchers, engineers, and data scientists committed to leveraging cutting-edge technology for wildfire management.
-
-### Core Contributors
-
-- 🧑‍💻 **Lead Developer**: Quantum optimization and system architecture
-- 🧠 **ML Engineer**: Deep learning models and prediction algorithms
-- 🎨 **Frontend Developer**: Web interface and visualization
-- 📊 **Data Scientist**: Data processing and analysis pipelines
-- 🔬 **Research Advisor**: Scientific validation and methodology
-
 ### Get in Touch
 
 - 📧 Email: contact@qbrigade.dev
@@ -732,13 +678,6 @@ We extend our gratitude to:
 - **Open-source community** for invaluable tools and libraries
 - **Fire departments** and emergency responders for domain expertise
 - **Academic institutions** for research collaboration
-
-### Special Thanks
-
-- PyTorch and TensorFlow teams for ML frameworks
-- Leaflet and D3.js for visualization libraries
-- FastAPI team for modern web framework
-- All contributors and supporters of this project
 
 ---
 
