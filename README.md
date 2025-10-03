@@ -1,10 +1,6 @@
 ![Moving clouds](./web/public/readme_banner.png)
 
 <p align="center">
-    Igniting change, not forests 🌳
-</p>
-
-<p align="center">
 <a target="_blank" href="https://github.com"><img src="https://img.shields.io/badge/quantum-computing-purple?logo=quantum&color=%23448b9e" /></a>
 <a target="_blank" href="https://paoloose.site"><img src="https://img.shields.io/badge/status-superposed-blue?logo=atom&color=%23e7982c" /></a>
 <a target="_blank" href="https://github.com"><img src="https://img.shields.io/badge/optimization-QUBO-green?logo=chart-line&color=%23467e4a" /></a>
