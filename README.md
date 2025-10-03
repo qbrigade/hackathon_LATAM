@@ -21,7 +21,7 @@
 <p align="center">
   <strong>🔗 <a href="https://qbrigade.pages.dev/" target="_blank">Explore Our Official Website</a></strong> | 
   <a href="#overview">Overview</a> | 
-  <a href="#installationsetup">Installation</a> | 
+  <a href="#installation-setup">Installation</a> | 
   <a href="#usage-examples">Usage</a> | 
   <a href="#contributing">Contributing</a>
 </p>
