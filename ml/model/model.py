@@ -5,7 +5,13 @@ from torch.utils.data import DataLoader
 from ml.data.split_data import FireSpreadDataset
 
 class ConvLSTMCell(nn.Module):
-    #ConvLSTM cell
+    """
+    Initialization of a single ConvLSTM cell.
+    input_dim: Number of channels of input tensor.
+    hidden_dim: Number of channels of hidden state.
+    kernel_size: Size of the convolutional kernel.
+    bias: Whether or not to add the bias.
+    """
     def __init__(self, input_dim, hidden_dim, kernel_size, bias=True):
         super(ConvLSTMCell, self).__init__()
         self.input_dim = input_dim
@@ -23,6 +29,10 @@ class ConvLSTMCell(nn.Module):
         )
 
     def forward(self, input_tensor, cur_state):
+        """
+        Forward pass of the ConvLSTM cell.
+        Uses convolutional operations instead of linear ones.
+        """
         h_cur, c_cur = cur_state
         
         # Input and hidden state
@@ -48,7 +58,15 @@ class ConvLSTMCell(nn.Module):
                 torch.zeros(batch_size, self.hidden_dim, height, width))
 
 class ConvLSTM(nn.Module):
-    #ConvLSTM model
+    """
+    Multi-layer ConvLSTM network.
+    input_dim: Number of channels of input tensor.
+    hidden_dims: List of hidden dimensions for each layer.
+    kernel_size: Size of the convolutional kernel.
+    num_layers: Number of ConvLSTM layers.
+    output_len: Number of time steps to predict.
+    output_activation: Activation function for the output.
+    """
     def __init__(self, input_dim=3, hidden_dims=[64, 64, 32], kernel_size=3, 
                  num_layers=3, output_len=1, output_activation='sigmoid'):
         super(ConvLSTM, self).__init__()
@@ -60,7 +78,6 @@ class ConvLSTM(nn.Module):
         self.output_len = output_len
         self.output_activation = output_activation
 
-        # ConvLSTM layers
         cell_list = []
         for i in range(num_layers):
             cur_input_dim = input_dim if i == 0 else hidden_dims[i-1]
@@ -88,7 +105,11 @@ class ConvLSTM(nn.Module):
             self.activation = nn.Identity()
 
     def forward(self, input_tensor, hidden_state=None):
-       
+        """
+        Forward pass of the ConvLSTM network.
+        input_tensor: (batch, seq_len, channels, height, width)
+        hidden_state: Initial hidden states for each layer.
+        """
         batch_size, seq_len, _, height, width = input_tensor.size()
         
         # Initialize hidden states if not provided
@@ -130,7 +151,9 @@ class ConvLSTM(nn.Module):
         return init_states
 
 class FireSpreadPredictor(nn.Module):
-    # Model to predict fire spread
+    """
+    Model to predict fire spread using ConvLSTM.
+    """
     def __init__(self, input_channels=3, hidden_dims=[32, 64, 32], pred_steps=1):
         super(FireSpreadPredictor, self).__init__()
         
@@ -146,9 +169,14 @@ class FireSpreadPredictor(nn.Module):
     def forward(self, x):
         return self.convlstm(x)
 
-# Training function
-def train_model(model, train_loader, epochs=5, learning_rate=0.0001):
-    model.to()
+def train_model(model, train_loader, epochs=100, learning_rate=0.0001):
+    """
+    Train the ConvLSTM model.
+    model: The ConvLSTM model.
+    train_loader: DataLoader for training data.
+    epochs: Number of training epochs.
+    learning_rate: Learning rate for the optimizer.
+    """
     
     criterion = nn.MSELoss()  # Mean Squared Error for regression
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -159,15 +187,14 @@ def train_model(model, train_loader, epochs=5, learning_rate=0.0001):
     for epoch in range(epochs):
         epoch_loss = 0
         for batch_idx, sequences in enumerate(train_loader):
-            # Input: first 4 time steps, Target: last time step
-            inputs = sequences[:, :-1, :, :, :].to()  # First 4 frames
-            targets = sequences[:, -1, :, :, :].to()  # Last frame (ground truth)
+            inputs = sequences[:, :-1, :, :, :]
+            targets = sequences[:, -1, :, :, :]  
             
             optimizer.zero_grad()
             
             # Predict next frame
             outputs = model(inputs)
-            outputs = outputs.squeeze(1)  # Remove time dimension if needed
+            outputs = outputs.squeeze(1) 
             
             loss = criterion(outputs, targets)
             loss.backward()
@@ -183,7 +210,6 @@ def train_model(model, train_loader, epochs=5, learning_rate=0.0001):
     
     return losses
 
-# Complete training script
 if __name__ == "__main__":
     from ml.data.split_data import FireSpreadDataset  
     
