@@ -35,7 +35,6 @@
 - [The Problem](#the-problem)
 - [Our Solution](#our-solution)
 - [Algorithm Workflow](#algorithm-workflow)
-- [Repository Structure](#repository-structure)
 - [Installation Setup](#installation-setup)
 - [Data Sources](#data-sources)
 - [Features](#features)
@@ -194,102 +193,6 @@ $$Q = \\sum_{(k, l)}\\sum_{(i, j)} M_{(i, j), (k, l)} \\mathbb{I}_{\\{ (i, k) \\
 $$P_1 = \\alpha \\left( \\sum_{i, j} d_{i, j} - \\left(W - 2^{\\lfloor \\log _2(W) \\rfloor} \\right)A_{i, j}^{\\lfloor \\log _2(W) \\rfloor + 1} - \\sum_{k = 0}^{\\lfloor \\log _2(W) \\rfloor} 2^{k}A_{i, j}^{k} \\right)$$
 $$P_2 = \\beta \\left( \\sum_{i, j} P_{i, j}d_{i, j} - \\left(R_m - 1 - 2^{\\lfloor \\log _2(R_m - 1) \\rfloor} \\right)A_{i, j}^{\\lfloor \\log _2(R_m - 1) \\rfloor + 1} - \\sum_{k = 0}^{\\lfloor \\log _2(R_m - 1) \\rfloor} 2^{k}A_{i, j}^{k} \\right)$$
 
-  
-
-
-## 📂 Repository Structure
-
-```
-hackathon_LATAM/
-├── 📁 data/                      # Dataset storage
-│   ├── raw/                      # Original satellite and weather data
-│   ├── processed/                # Cleaned and formatted data
-│   └── samples/                  # Example datasets for testing
-│
-├── 📁 notebooks/                 # Jupyter notebooks for experimentation
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_model_training.ipynb
-│   ├── 03_quantum_optimization.ipynb
-│   └── 04_results_analysis.ipynb
-│
-├── 📁 src/                       # Source code
-│   ├── 📁 data/                  # Data processing modules
-│   │   ├── loader.py
-│   │   ├── preprocessor.py
-│   │   └── augmentation.py
-│   │
-│   ├── 📁 models/                # ML/DL models
-│   │   ├── convlstm.py          # ConvLSTM implementation
-│   │   ├── trainer.py           # Training pipeline
-│   │   └── evaluator.py         # Model evaluation
-│   │
-│   ├── 📁 quantum/               # Quantum computing modules
-│   │   ├── qubo_formulation.py  # QUBO problem setup
-│   │   ├── dwave_solver.py      # D-Wave integration
-│   │   └── optimizer.py         # Resource allocation logic
-│   │
-│   ├── 📁 utils/                 # Utility functions
-│   │   ├── config.py            # Configuration management
-│   │   ├── logger.py            # Logging utilities
-│   │   └── metrics.py           # Performance metrics
-│   │
-│   └── 📁 visualization/         # Visualization tools
-│       ├── fire_map.py          # Fire spread visualization
-│       ├── resource_plot.py     # Resource allocation plots
-│       └── dashboard.py         # Interactive dashboard
-│
-├── 📁 web/                       # Web application
-│   ├── 📁 public/               # Static assets
-│   │   ├── readme_banner.png
-│   │   └── favicon.ico
-│   │
-│   ├── 📁 src/                  # Frontend source
-│   │   ├── 📁 components/       # React components
-│   │   ├── 📁 pages/            # Page components
-│   │   ├── 📁 styles/           # CSS/styling
-│   │   └── 📁 utils/            # Frontend utilities
-│   │
-│   ├── package.json
-│   └── README.md
-│
-├── 📁 api/                       # Backend API
-│   ├── 📁 routes/               # API endpoints
-│   ├── 📁 controllers/          # Business logic
-│   ├── 📁 middleware/           # Middleware functions
-│   ├── app.py                   # Main application
-│   └── requirements.txt
-│
-├── 📁 tests/                     # Unit and integration tests
-│   ├── test_data_processing.py
-│   ├── test_models.py
-│   ├── test_quantum.py
-│   └── test_api.py
-│
-├── 📁 docs/                      # Documentation
-│   ├── architecture.md
-│   ├── api_reference.md
-│   ├── deployment.md
-│   └── user_guide.md
-│
-├── 📁 scripts/                   # Utility scripts
-│   ├── download_data.sh
-│   ├── train_model.sh
-│   └── deploy.sh
-│
-├── 📁 configs/                   # Configuration files
-│   ├── model_config.yaml
-│   ├── quantum_config.yaml
-│   └── deployment_config.yaml
-│
-├── .gitignore
-├── requirements.txt              # Python dependencies
-├── environment.yml               # Conda environment
-├── docker-compose.yml            # Docker configuration
-├── Dockerfile
-├── LICENSE
-└── README.md                     # This file
-```
-
 ---
 
 ## 🛠️ Installation Setup
@@ -298,8 +201,8 @@ hackathon_LATAM/
 
 - **Python**: 3.8 or higher
 - **Node.js**: 16.x or higher (for web application)
-- **CUDA**: 11.0+ (optional, for GPU acceleration)
-- **D-Wave Account**: Free access via [D-Wave Leap](https://cloud.dwavesys.com/leap/)
+- **Qiskit**: 1.x
+- **Qiskit-Optimization**: Any version
 
 ### Quick Start
 
@@ -327,17 +230,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-#### 3. Configure D-Wave Access
-
-```bash
-# Set your D-Wave API token
-export DWAVE_API_TOKEN='your-api-token-here'
-
-# Or create a .env file
-echo "DWAVE_API_TOKEN=your-api-token-here" > .env
-```
-
-#### 4. Download Sample Data
+#### 3. Download Sample Data
 
 ```bash
 # Run data download script
@@ -347,7 +240,7 @@ bash scripts/download_data.sh
 python src/data/loader.py --download
 ```
 
-#### 5. Set Up Web Application
+#### 4. Set Up Web Application
 
 ```bash
 cd web
@@ -357,7 +250,7 @@ npm run dev
 
 The web interface will be available at `http://localhost:3000`
 
-#### 6. Start API Server
+#### 5. Start API Server
 
 ```bash
 cd api
@@ -365,19 +258,6 @@ python app.py
 ```
 
 The API will be available at `http://localhost:8000`
-
-### Docker Deployment
-
-For containerized deployment:
-
-```bash
-# Build and run all services
-docker-compose up -d
-
-# Access services:
-# - Web UI: http://localhost:3000
-# - API: http://localhost:8000
-```
 
 ---
 
