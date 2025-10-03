@@ -30,7 +30,6 @@
 
 ## 📑 Table of Contents
 
-- [🎮 Live Demo](#-live-demo)
 - [Overview](#overview)
 - [The Problem](#the-problem)
 - [Our Solution](#our-solution)
