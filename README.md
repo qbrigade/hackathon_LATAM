@@ -572,7 +572,7 @@ This project was developed for the **Quantum Computing LATAM Hackathon**, addres
 
 **Team**: Quantum Brigade  
 **Challenge**: Environmental Impact & Climate Solutions  
-**Focus Areas**: UN SDG 13 (Climate Action) & SDG 15 (Life on Land)
+**Focus Areas**: UN SDG 13 (Climate Action) & SDG 6 (Clean Water and Sanitation)
 
 ---
 
