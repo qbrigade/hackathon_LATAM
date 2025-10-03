@@ -3,6 +3,8 @@ import { Sidebar } from '@common/components/sidebar';
 import { Map, Marker, useMap } from '@vis.gl/react-google-maps';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import flameSmall from '@assets/images/icons/flame_small.gif';
+import outputStatic from '@assets/images/output_2.png';
+import outputGif from '@assets/images/output.gif';
 import firewallIcon from '@assets/images/firewall.png';
 import logo from '@assets/images/logo_v3.png';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -98,6 +100,7 @@ export function MapPage() {
   const [showGrid, setShowGrid] = useState<boolean>(false);
   const [hoverPoint, setHoverPoint] = useState<google.maps.LatLngLiteral | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
+  const [showAnalysis, setShowAnalysis] = useState<boolean>(false);
   const [fireVectors, setFireVectors] = useState<Array<{ start: google.maps.LatLngLiteral; end: google.maps.LatLngLiteral }>>([]);
   const [actionPlans, setActionPlans] = useState<Array<{ at: google.maps.LatLngLiteral; summary: string }>>([]);
   const [firewalls, setFirewalls] = useState<google.maps.LatLngLiteral[]>([]);
@@ -499,8 +502,9 @@ export function MapPage() {
           )} */}
 
           <div className='h-full w-full flex'>
-            <div className='flex-1 relative h-screen md:h-auto'>
-              <Map
+             <div className='flex-1 relative h-screen md:h-auto'>
+               {!showAnalysis ? (
+               <Map
                 cameraControl={false}
                 zoomControl={false}
                 fullscreenControl={false}
@@ -640,7 +644,10 @@ export function MapPage() {
                     fillOpacity={0.15}
                   />
                 )}
-              </Map>
+               </Map>
+               ) : (
+                 <AnalysisView onBack={() => setShowAnalysis(false)} />
+               )}
             </div>
 
             {/* Fullscreen Processing Overlay */}
@@ -1028,13 +1035,22 @@ export function MapPage() {
                       </div> */}
 
                       {/* Back to Map Button */}
-                      <button
+                       <button
                         className='w-full rounded-lg border px-4 py-2 text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors'
                         style={{ borderColor: '#e5e7eb', color: '#374151' }}
                         onClick={() => setActiveTab('controls')}
                       >
                         ← Back to Controls
                       </button>
+                       <div className='mt-2'>
+                         <button
+                           className='w-full rounded-lg border px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-colors'
+                           style={{ borderColor: '#e5e7eb', color: '#111827' }}
+                           onClick={() => setShowAnalysis(true)}
+                         >
+                           View analysis
+                         </button>
+                       </div>
                     </div>
                   )}
                 </div>
@@ -1064,6 +1080,38 @@ export function MapPage() {
         </main>
       </div>
     </Layout>
+  );
+}
+
+function AnalysisView({ onBack }: { onBack: () => void }) {
+  return (
+    <div className='w-full h-full overflow-auto' style={{ backgroundColor: '#ffffff' }}>
+      <div className='max-w-5xl mx-auto p-4 md:p-6'>
+        <div className='flex items-center justify-between mb-4'>
+          <h2 className='text-xl md:text-2xl font-bold' style={{ color: '#0f172a' }}>Analysis</h2>
+          <button
+            className='rounded-md border px-3 py-1.5 text-sm font-medium cursor-pointer hover:bg-gray-50'
+            style={{ borderColor: '#e5e7eb', color: '#374151' }}
+            onClick={onBack}
+          >
+            ← Back to Map
+          </button>
+        </div>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <div className='rounded-lg border p-3' style={{ borderColor: '#e5e7eb' }}>
+            <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Heatmap</div>
+            <img src={outputStatic} alt='Heatmap' className='w-full h-auto rounded-md' />
+          </div>
+          <div className='rounded-lg border p-3' style={{ borderColor: '#e5e7eb' }}>
+            <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Time-lapse</div>
+            <img src={outputGif} alt='Time-lapse' className='w-full h-auto rounded-md' />
+          </div>
+        </div>
+        <div className='mt-4 text-xs' style={{ color: '#6b7280' }}>
+          This page will host detailed analysis, charts, and reports.
+        </div>
+      </div>
+    </div>
   );
 }
 
