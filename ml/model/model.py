@@ -169,74 +169,84 @@ class FireSpreadPredictor(nn.Module):
     def forward(self, x):
         return self.convlstm(x)
 
-def train_model(model, train_loader, epochs=100, learning_rate=0.0001):
+import time
+import math
+import sys
+
+def train_model(model, train_loader, epochs=5, learning_rate=0.0001, log_every_batch=False):
     """
-    Train the ConvLSTM model.
-    model: The ConvLSTM model.
-    train_loader: DataLoader for training data.
-    epochs: Number of training epochs.
-    learning_rate: Learning rate for the optimizer.
+    Train the ConvLSTM model with detailed logging.
+    - Logs every epoch (and optionally per batch)
+    - Shows running average loss and epoch duration
     """
-    
-    criterion = nn.MSELoss()  # Mean Squared Error for regression
+    criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    
     model.train()
+
     losses = []
-    
-    for epoch in range(epochs):
-        epoch_loss = 0
-        for batch_idx, sequences in enumerate(train_loader):
-            inputs = sequences[:, :-1, :, :, :]
-            targets = sequences[:, -1, :, :, :]  
-            
+    num_batches = len(train_loader)
+    if num_batches == 0:
+        raise RuntimeError("Train loader is empty. Check your data folder / seq_len.")
+
+    print(f"[TRAIN] epochs={epochs} | batches/epoch={num_batches} | lr={learning_rate}")
+    for epoch in range(1, epochs + 1):
+        t0 = time.time()
+        epoch_loss = 0.0
+
+        print(f"\n=== Epoch {epoch}/{epochs} ===")
+        for batch_idx, sequences in enumerate(train_loader, start=1):
+            inputs  = sequences[:, :-1, :, :, :]
+            targets = sequences[:, -1,  :, :, :]  # (B, C, H, W)
+
             optimizer.zero_grad()
-            
-            # Predict next frame
-            outputs = model(inputs)
-            outputs = outputs.squeeze(1) 
-            
+            outputs = model(inputs).squeeze(1)    # (B, C, H, W)
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
-            
+
             epoch_loss += loss.item()
-        
-        avg_loss = epoch_loss / len(train_loader)
+            if log_every_batch:
+                running_avg = epoch_loss / batch_idx
+                # lightweight inline progress
+                print(f"\r  batch {batch_idx}/{num_batches} "
+                      f"| loss {loss.item():.6f} "
+                      f"| avg {running_avg:.6f}", end="")
+                sys.stdout.flush()
+
+        avg_loss = epoch_loss / num_batches
         losses.append(avg_loss)
-        
-        if epoch % 10 == 0:
-            print(f'Epoch {epoch}/{epochs}, Loss: {avg_loss:.6f}')
-    
+        dt = time.time() - t0
+        print()
+        print(f"-> Epoch {epoch} done | avg_loss={avg_loss:.6f} | time={dt:.1f}s")
+
     return losses
 
 if __name__ == "__main__":
-    from ml.data.split_data import FireSpreadDataset  
-    
-    # Load  data
+    from torch.utils.data import DataLoader
+    from ml.data.split_data import FireSpreadDataset
+
     dataset = FireSpreadDataset(
-        data_folder="ml/data/sample_data",
+        data_folder="ml/data/all_data/2019",  
         seq_len=5,
-        channels=[0, 1, 2],
-        normalization=True
+        channels=[22],            
+        normalization=True,
+        resize_to=(256, 256)    
     )
-    
-    # Create data loader
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
-    
-    # Initialize model
+
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=0)
+
     model = FireSpreadPredictor(
-        input_channels=3,     
+        input_channels=1,        
         hidden_dims=[32, 64, 32],
-        pred_steps=1           # 1 frame ahead prediction
+        pred_steps=1
     )
-    
+
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
-    print(f"Input shape example: {next(iter(dataloader)).shape}")
-    
-    # Train the model
+    batch = next(iter(dataloader))
+    print(f"Input shape example: {batch.shape}") 
+
     losses = train_model(model, dataloader, epochs=5, learning_rate=0.001)
-    
-    # Save the trained model
+
     torch.save(model.state_dict(), 'fire_spread_model.pth')
     print("Model saved!")
+
