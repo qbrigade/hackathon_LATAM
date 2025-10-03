@@ -3,8 +3,9 @@ import { Sidebar } from '@common/components/sidebar';
 import { Map, Marker, useMap } from '@vis.gl/react-google-maps';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import flameSmall from '@assets/images/icons/flame_small.gif';
-import logo from '@assets/images/logo_v2.png';
+import logo from '@assets/images/logo_v3.png';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { WILDFIRE_DETECTED_PERIMETER } from '@common/constants';
 
 export type MapConfig = {
   id: string;
@@ -20,6 +21,9 @@ const MapTypeId = {
   SATELLITE: 'satellite',
   TERRAIN: 'terrain'
 };
+
+// Start far from the fire area to nudge users to engage (e.g., Denver)
+const FAR_START_COORDS: google.maps.LatLngLiteral = { lat: 46.837235, lng: -109.477070 };
 
 const MAP_CONFIGS: MapConfig[] = [
   {
@@ -71,22 +75,71 @@ const MAP_CONFIGS: MapConfig[] = [
 
 export function MapPage() {
   const [mapConfig, ] = useState<MapConfig>(MAP_CONFIGS[3]);
-  const [center, setCenter] = useState<google.maps.LatLngLiteral>({ lat: -15.000883, lng: -62.000051 });
-  const [zoom, setZoom] = useState<number>(20);
+  const [center, setCenter] = useState<google.maps.LatLngLiteral>(FAR_START_COORDS);
+  const [zoom, setZoom] = useState<number>(10);
   const [bounds, setBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
-  const [gridSize, setGridSize] = useState<number>(10);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [gridSize, setGridSize] = useState<number>(500);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [autoWeather, setAutoWeather] = useState<boolean>(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [windSpeed, setWindSpeed] = useState<number>(10);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [windDirection, setWindDirection] = useState<number>(90);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [temperature, setTemperature] = useState<number>(20);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [humidity, setHumidity] = useState<number>(50);
   const [selectedPoints, setSelectedPoints] = useState<Array<google.maps.LatLngLiteral>>([]);
   const [cameraVersion, setCameraVersion] = useState<number>(0);
-  const [showGrid, setShowGrid] = useState<boolean>(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [showGrid, setShowGrid] = useState<boolean>(false);
   const [hoverPoint, setHoverPoint] = useState<google.maps.LatLngLiteral | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
   const [fireVectors, setFireVectors] = useState<Array<{ start: google.maps.LatLngLiteral; end: google.maps.LatLngLiteral }>>([]);
   const [actionPlans, setActionPlans] = useState<Array<{ at: google.maps.LatLngLiteral; summary: string }>>([]);
+  const cameraControllerRef = useRef<CameraControllerHandle | null>(null);
+  const [selectedFireId, setSelectedFireId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'controls' | 'results'>('controls');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+
+  const perimeterDays = useMemo(() => {
+    const dict = WILDFIRE_DETECTED_PERIMETER as unknown as Record<string, Array<[number, number]>>;
+    return Object.entries(dict)
+      .filter(([, coords]) => Array.isArray(coords) && coords.length > 0)
+      .map(([k]) => k)
+      .sort();
+  }, []);
+  const [perimeterIdx, setPerimeterIdx] = useState<number>(0);
+  const perimeterCoords = useMemo<google.maps.LatLngLiteral[]>(() => {
+    const key = perimeterDays[perimeterIdx];
+    const dict = WILDFIRE_DETECTED_PERIMETER as unknown as Record<string, Array<[number, number]>>;
+    const arr = dict[key] || [];
+    return arr.map(([lat, lng]) => ({ lat, lng }));
+  }, [perimeterDays, perimeterIdx]);
+
+  const perimeterCentroid = useMemo<google.maps.LatLngLiteral | null>(() => {
+    if (perimeterCoords.length === 0) return null;
+    let sumLat = 0;
+    let sumLng = 0;
+    for (const p of perimeterCoords) { sumLat += p.lat; sumLng += p.lng; }
+    return { lat: sumLat / perimeterCoords.length, lng: sumLng / perimeterCoords.length };
+  }, [perimeterCoords]);
+
+  const radarRadius = useMemo(() => {
+    if (perimeterCoords.length === 0) return 0;
+    if (!perimeterCentroid) return 0;
+    let maxDist = 0;
+    for (const p of perimeterCoords) {
+      const dLat = p.lat - perimeterCentroid.lat;
+      const dLng = p.lng - perimeterCentroid.lng;
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      if (dist > maxDist) maxDist = dist;
+    }
+    // Convert degree distance to approximate meters (rough estimate)
+    const radiusMeters = maxDist * 111320;
+    return radiusMeters;
+  }, [perimeterCoords, perimeterCentroid]);
 
   const handleCameraChanged = useCallback((ev: unknown) => {
     const e = ev as { detail?: { center?: google.maps.LatLng | google.maps.LatLngLiteral | null; zoom?: number } };
@@ -245,6 +298,9 @@ export function MapPage() {
         summary: `Plan ${idx + 1}: Establish 30m firewall ahead of projected spread; stage crew downwind.`,
       }));
       setActionPlans(plans);
+
+      // Switch to results tab after processing
+      setActiveTab('results');
     } finally {
       setProcessing(false);
     }
@@ -288,6 +344,16 @@ export function MapPage() {
     return best;
   }, []);
 
+  // Center map to perimeter centroid when day changes
+  useEffect(() => {
+    if (perimeterCoords.length === 0) return;
+    let sumLat = 0;
+    let sumLng = 0;
+    for (const p of perimeterCoords) { sumLat += p.lat; sumLng += p.lng; }
+    const centroid = { lat: sumLat / perimeterCoords.length, lng: sumLng / perimeterCoords.length } as google.maps.LatLngLiteral;
+    cameraControllerRef.current?.animateTo(centroid);
+  }, [perimeterIdx, perimeterCoords]);
+
   // When grid changes (size or bounds), re-snap selected points and hover to nearest current vertices
   useEffect(() => {
     if (!bounds) return;
@@ -330,13 +396,64 @@ export function MapPage() {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   };
 
+
+  // Safe constructors for Google Maps objects that may not be available at first render
+  const makeGPoint = useCallback((x: number, y: number): google.maps.Point | undefined => {
+    try {
+      if (typeof google !== 'undefined' && google?.maps?.Point) return new google.maps.Point(x, y);
+    } catch {
+      // ignore until API is ready
+    }
+    return undefined;
+  }, []);
+
+  const makeGSize = useCallback((w: number, h: number): google.maps.Size | undefined => {
+    try {
+      if (typeof google !== 'undefined' && google?.maps?.Size) return new google.maps.Size(w, h);
+    } catch {
+      // ignore until API is ready
+    }
+    return undefined;
+  }, []);
+
   return (
     <Layout>
-      <div className='flex' style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      <div className='flex flex-col md:flex-row' style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
         <Sidebar />
-        <main className='flex-1 text-gray-900'>
+        <main className='flex-1 text-gray-900 overflow-hidden relative'>
+          {/* Mobile menu toggle button */}
+          <button
+            className='md:hidden fixed top-18 right-4 z-50 p-3 rounded-lg shadow-lg cursor-pointer'
+            style={{ backgroundColor: '#111827', color: '#ffffff' }}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
+              {isSidebarOpen ? (
+                <>
+                  <line x1='18' y1='6' x2='6' y2='18'></line>
+                  <line x1='6' y1='6' x2='18' y2='18'></line>
+                </>
+              ) : (
+                <>
+                  <line x1='3' y1='12' x2='21' y2='12'></line>
+                  <line x1='3' y1='6' x2='21' y2='6'></line>
+                  <line x1='3' y1='18' x2='21' y2='18'></line>
+                </>
+              )}
+            </svg>
+          </button>
+
+          {/* Mobile backdrop overlay - only covers the left portion */}
+          {/* {isSidebarOpen && (
+            <div
+              className='md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 pointer-events-auto'
+              style={{ left: 0, right: '15vw' }}
+              onClick={() => setIsSidebarOpen(false)}
+            ></div>
+          )} */}
+
           <div className='h-full w-full flex'>
-            <div className='flex-1 relative'>
+            <div className='flex-1 relative h-screen md:h-auto'>
               <Map
                 cameraControl={false}
                 zoomControl={false}
@@ -345,9 +462,9 @@ export function MapPage() {
                 mapTypeControl={false}
                 keyboardShortcuts={false}
                 disableDoubleClickZoom={false}
-                defaultCenter={{lat: -15.000883, lng: -62.000051}}
-                defaultZoom={20}
-                minZoom={13}
+                defaultCenter={FAR_START_COORDS}
+                defaultZoom={13}
+                minZoom={4}
                 // minZoom={18.5}
                 mapId={mapConfig.mapId || null}
                 mapTypeId={mapConfig.mapTypeId}
@@ -372,7 +489,11 @@ export function MapPage() {
                   toggleVertex(hoverPoint);
                 }}
               >
+                <CameraController ref={cameraControllerRef} />
                 <BoundsUpdater onBounds={setBounds} cameraVersion={cameraVersion} />
+                {perimeterCoords.length > 0 && (
+                  <FireDateMarkers coords={perimeterCoords} makeGPoint={makeGPoint} makeGSize={makeGSize} />
+                )}
                 {showGrid && (
                   <>
                     {gridLinesAndVertices.hLines.map((line, idx) => (
@@ -386,10 +507,11 @@ export function MapPage() {
                         key={`sel-${i}`}
                         position={pt}
                         clickable={false}
+                        optimized={false}
                         icon={{
                           url: flameSmall,
-                          anchor: new google.maps.Point(16, 32),
-                          scaledSize: new google.maps.Size(46, 46),
+                          anchor: makeGPoint(16, 32),
+                          scaledSize: makeGSize(46, 46),
                         }}
                       />
                     ))}
@@ -400,8 +522,8 @@ export function MapPage() {
                         zIndex={9999}
                         icon={{
                           url: makeCircleDataUrl('#ff2929'),
-                          anchor: new google.maps.Point(8, 8),
-                          scaledSize: new google.maps.Size(15, 15),
+                          anchor: makeGPoint(8, 8),
+                          scaledSize: makeGSize(15, 15),
                         }}
                       />
                     )}
@@ -428,50 +550,205 @@ export function MapPage() {
                     label={{ text: 'Action plan', color: '#064e3b', fontSize: '12px', fontWeight: 'bold' } as unknown as string}
                     icon={{
                       url: makeCircleDataUrl('#10b981'),
-                      anchor: new google.maps.Point(10, 10),
-                      scaledSize: new google.maps.Size(20, 20),
+                      anchor: makeGPoint(10, 10),
+                      scaledSize: makeGSize(20, 20),
                     }}
                   />
                 ))}
+                {/* Wildfire detection radar at perimeter centroid - geographic circle */}
+                {perimeterCentroid && radarRadius > 0 && (
+                  <GCircle
+                    center={perimeterCentroid}
+                    radius={radarRadius * 1.2}
+                    strokeColor="#ef4444"
+                    strokeOpacity={0.6}
+                    strokeWeight={2}
+                    fillColor="#ef4444"
+                    fillOpacity={0.15}
+                  />
+                )}
               </Map>
-              {processing && (
-                <div className='pointer-events-none absolute inset-0 z-[10000] flex items-center justify-center'>
-                  <div className='absolute inset-0 bg-black/35'></div>
-                  <div className='relative flex flex-col items-center gap-4 rounded-xl px-6 py-5 shadow-2xl' style={{ backgroundColor: 'rgba(17, 24, 39, 0.92)' }}>
-                    <img src={logo} alt='Processing' className='h-28 w-28 rounded-full shadow' />
-                    <div className='flex items-center gap-3'>
-                      <span className='relative inline-flex h-5 w-5'>
-                        <span className='animate-ping absolute inline-flex h-full w-full rounded-full' style={{ backgroundColor: '#60a5fa', opacity: 0.7 }}></span>
-                        <span className='relative inline-flex rounded-full h-5 w-5' style={{ backgroundColor: '#3b82f6' }}></span>
-                      </span>
-                      <div className='text-base font-semibold' style={{ color: '#e5e7eb' }}>Processing wildfire map...</div>
-                    </div>
-                    <div className='mt-1.5 h-1.5 w-48 overflow-hidden rounded-full' style={{ backgroundColor: '#111827' }}>
-                      <div className='h-full w-1/3 rounded-full' style={{ background: 'linear-gradient(90deg, rgba(96,165,250,0) 0%, rgba(96,165,250,0.9) 50%, rgba(96,165,250,0) 100%)', animation: 'shimmer 1.1s infinite' }}></div>
-                    </div>
+            </div>
+            
+            {/* Fullscreen Processing Overlay */}
+            {processing && (
+              <div className='pointer-events-none fixed inset-0 z-[10000] flex items-center justify-center'>
+                <div className='absolute inset-0 bg-black/80'></div>
+                <div className='relative flex flex-col items-center gap-4 rounded-xl px-6 py-5 shadow-2xl' style={{ backgroundColor: 'rgba(17, 24, 39, 0.95)' }}>
+                  <img src={logo} alt='Processing' className='h-28 w-28 rounded-full shadow' />
+                  <div className='flex items-center gap-3'>
+                    <span className='relative inline-flex h-5 w-5'>
+                      <span className='animate-ping absolute inline-flex h-full w-full rounded-full' style={{ backgroundColor: '#60a5fa', opacity: 0.7 }}></span>
+                      <span className='relative inline-flex rounded-full h-5 w-5' style={{ backgroundColor: '#3b82f6' }}></span>
+                    </span>
+                    <div className='text-base font-semibold' style={{ color: '#e5e7eb' }}>Processing wildfire analysis...</div>
+                  </div>
+                  <div className='mt-1.5 h-1.5 w-48 overflow-hidden rounded-full' style={{ backgroundColor: '#111827' }}>
+                    <div className='h-full w-1/3 rounded-full' style={{ background: 'linear-gradient(90deg, rgba(96,165,250,0) 0%, rgba(96,165,250,0.9) 50%, rgba(96,165,250,0) 100%)', animation: 'shimmer 1.1s infinite' }}></div>
+                  </div>
+                  <div className='text-sm text-center mt-2' style={{ color: 'rgba(229,231,235,0.7)' }}>
+                    Running quantum optimization algorithms...
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Mobile sidebar - slides in from right */}
             <aside
-              className='border-l relative'
-              style={{ width: 340, borderColor: '#e5e7eb', backgroundColor: '#ffffff' }}
+              className={`
+                md:relative md:block
+                fixed inset-y-0 right-0 z-40
+                w-[85vw] max-w-sm
+                transform transition-transform duration-300 ease-in-out
+                ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}
+                md:translate-x-0 md:w-[340px]
+                border-l
+              `}
+              style={{ borderColor: '#e5e7eb', backgroundColor: '#ffffff' }}
             >
-              <div className='p-4'>
-                <div className='mb-5 flex items-center gap-3 rounded-lg border px-3 py-2 shadow-sm' style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%)', borderColor: '#e5e7eb' }}>
-                  <img src={logo} alt='QBrigade' className='h-9 w-9 rounded-full shadow' />
-                  <span className='text-xl font-semibold font-serif' style={{ color: '#0f172a' }}>QBrigade</span>
-                </div>
-                <div className='mb-4'>
-                  <div className='text-sm font-semibold text-gray-800'>Parameters</div>
-                </div>
+              {/* Mobile close button inside sidebar */}
+              <button
+                className='md:hidden absolute top-4 right-4 z-10 p-2 rounded-md cursor-pointer'
+                style={{ color: '#111827' }}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
+                  <line x1='18' y1='6' x2='6' y2='18'></line>
+                  <line x1='6' y1='6' x2='18' y2='18'></line>
+                </svg>
+              </button>
+              <div className='absolute inset-0 flex flex-col'>
+                <div className='flex-1 overflow-y-auto p-3 md:p-4 pb-24 md:pb-28'>
+                  <div className='mb-4 md:mb-5 flex items-center justify-between rounded-lg border px-2 md:px-3 py-2 shadow-sm' style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%)', borderColor: '#e5e7eb' }}>
+                    <div className='flex items-center gap-2 md:gap-3'>
+                      <img src={logo} alt='QBrigade' className='h-7 w-7 md:h-9 md:w-9 rounded-full shadow' />
+                      <span className='text-lg md:text-xl font-semibold font-serif' style={{ color: '#0f172a' }}>QBrigade</span>
+                    </div>
+                    <a
+                      href={'https://github.com/qbrigade/hackathon_LATAM'}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='inline-flex items-center gap-1 md:gap-1.5 rounded-md px-1.5 md:px-2 py-1 hover:bg-white cursor-pointer'
+                      title='Open QBrigade on GitHub'
+                      aria-label='Open QBrigade on GitHub'
+                      style={{ color: '#111827', borderColor: '#e5e7eb' }}
+                    >
+                      <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className='md:w-[18px] md:h-[18px]'>
+                        <path d='M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.11.82-.26.82-.58 0-.29-.01-1.06-.015-2.08-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.334-1.757-1.334-1.757-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.805 1.305 3.49.998.108-.775.42-1.305.763-1.605-2.665-.305-5.466-1.332-5.466-5.93 0-1.31.47-2.38 1.236-3.22-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23a11.52 11.52 0 0 1 3.003-.403c1.02.005 2.047.137 3.004.403 2.29-1.552 3.297-1.23 3.297-1.23.653 1.652.242 2.873.118 3.176.77.84 1.235 1.91 1.235 3.22 0 4.61-2.806 5.624-5.48 5.92.43.37.814 1.096.814 2.21 0 1.595-.014 2.88-.014 3.27 0 .32.216.697.825.578C20.565 21.797 24 17.297 24 12 24 5.37 18.63 0 12 0z'/>
+                      </svg>
+                      <span className='text-[9px] md:text-[10.5px] font-medium hidden sm:inline'>View on GitHub</span>
+                    </a>
+                  </div>
+
+                  {/* Tab content - conditional rendering */}
+                  {activeTab === 'controls' && (
+                    <>
+
+                  {/* LIVE urgency section */}
+                  <div className='mb-4 md:mb-5 rounded-md border px-2 md:px-3 py-2' style={{ backgroundColor: '#b91c1c', borderColor: '#7f1d1d' }}>
+                    <div className='flex items-center gap-2'>
+                      <span className='relative inline-flex h-3 w-3 md:h-3.5 md:w-3.5'>
+                        <span className='animate-ping absolute inline-flex h-full w-full rounded-full' style={{ backgroundColor: '#ffffff', opacity: 0.7 }}></span>
+                        <span className='relative inline-flex rounded-full h-3 w-3 md:h-3.5 md:w-3.5' style={{ backgroundColor: '#ffffff' }}></span>
+                      </span>
+                      <span className='text-xs md:text-sm font-bold' style={{ color: '#ffffff' }}>LIVE</span>
+                    </div>
+                    <div className='mt-0.5 md:mt-1 text-[10px] md:text-xs' style={{ color: '#fee2e2' }}>Active wildfire detections updating. Click a fire to focus the map.</div>
+                  </div>
+
+                  {/* Active wildfires - prioritized to top */}
+                  <div className='mb-4 md:mb-5'>
+                    <div className='text-xs md:text-sm font-semibold' style={{ color: '#7f1d1d' }}>Active wildfires</div>
+                    <div className='mt-2 space-y-1.5 md:space-y-2 relative'>
+                      {[{
+                        id: 'wf-1',
+                        name: 'Bear Creek Fire',
+                        coords: { lat: 47.163741, lng: -109.559723 },
+                        location: 'Lewis and Clark County, Montana',
+                        hue: '#dc2626'
+                      }].map((f, idx) => {
+                        const isSelected = selectedFireId === f.id;
+                        const isFirstAndNotSelected = idx === 0 && !isSelected;
+                        return (
+                          <button
+                            key={f.id}
+                            className='w-full text-left rounded-md border px-2 md:px-3 py-1.5 md:py-2 hover:shadow-md transition-all cursor-pointer'
+                            style={{
+                              borderColor: isSelected ? '#dc2626' : '#fecaca',
+                              background: isSelected ? 'linear-gradient(180deg, #fee2e2 0%, #fef2f2 100%)' : 'linear-gradient(180deg, #fff1f2 0%, #ffffff 100%)',
+                              boxShadow: isSelected ? '0 0 0 3px rgba(220,38,38,0.4) inset' : '0 0 0 2px rgba(239,68,68,0.25) inset',
+                              animation: isFirstAndNotSelected ? 'pulse-card 2s ease-in-out infinite' : undefined,
+                              transform: isFirstAndNotSelected ? 'scale(1.02)' : undefined
+                            }}
+                            onClick={() => { setSelectedFireId(f.id); cameraControllerRef.current?.animateTo(f.coords); }}
+                          >
+                            <div className='flex items-start gap-1.5 md:gap-2'>
+                              <span className='mt-0.5 md:mt-1 inline-flex h-2 w-2 md:h-2.5 md:w-2.5 rounded-full animate-pulse' style={{ backgroundColor: f.hue }}></span>
+                              <div className='min-w-0 flex-1'>
+                                <div className='flex items-center justify-between'>
+                                  <span className='truncate text-xs md:text-sm font-semibold' style={{ color: '#7f1d1d' }}>{f.name}</span>
+                                  <span className='text-[9px] md:text-[10px]' style={{ color: '#ef4444' }}>{isSelected ? 'selected' : 'view'}</span>
+                                </div>
+                                <div className='text-[10px] md:text-xs' style={{ color: '#374151' }}>{f.coords.lat.toFixed(5)}, {f.coords.lng.toFixed(5)}</div>
+                                <div className='text-[10px] md:text-xs' style={{ color: '#6b7280' }}>{f.location}</div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Perimeter stepper - only show if a fire is selected */}
+                  {selectedFireId && (
+                    <div className='mb-3 md:mb-4 rounded-md border p-2 md:p-3' style={{ borderColor: '#e5e7eb' }}>
+                      <div className='mb-1.5 md:mb-2 flex items-center justify-between'>
+                        <span className='text-xs md:text-sm font-semibold text-gray-800'>Perimeter (5-day)</span>
+                        <span className='text-[10px] md:text-xs text-gray-500'>{perimeterDays[perimeterIdx]}</span>
+                      </div>
+                      <div className='flex items-center gap-1.5 md:gap-2'>
+                        <button
+                          className='rounded border px-1.5 md:px-2 py-0.5 md:py-1 text-[10px] md:text-xs disabled:opacity-50 cursor-pointer'
+                          style={{ borderColor: '#e5e7eb' }}
+                          disabled={perimeterIdx <= 0}
+                          onClick={() => setPerimeterIdx((i) => Math.max(0, i - 1))}
+                        >
+                          Prev
+                        </button>
+                        <input
+                          type='range'
+                          className='flex-1 cursor-pointer'
+                          min={0}
+                          max={Math.max(0, perimeterDays.length - 1)}
+                          step={1}
+                          value={perimeterIdx}
+                          onChange={(e) => setPerimeterIdx(Number(e.target.value))}
+                        />
+                        <button
+                          className='rounded border px-1.5 md:px-2 py-0.5 md:py-1 text-[10px] md:text-xs disabled:opacity-50 transition-all cursor-pointer'
+                          style={{
+                            borderColor: '#e5e7eb',
+                            animation: perimeterIdx < Math.max(0, perimeterDays.length - 1) ? 'pulse-button 1.5s ease-in-out infinite' : undefined
+                          }}
+                          disabled={perimeterIdx >= Math.max(0, perimeterDays.length - 1)}
+                          onClick={() => setPerimeterIdx((i) => Math.min(perimeterDays.length - 1, i + 1))}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className='mb-4'>
+                    <div className='text-sm font-semibold text-gray-800'>Parameters</div>
+                  </div>
 
                 <div className='mb-4'>
                   <label className='block text-xs text-gray-500 mb-1'>Coords (center)</label>
                   <div className='text-sm text-gray-800 select-text'>{formattedCoords}</div>
                 </div>
 
-                <div className='mb-6'>
+                {/* <div className='mb-6'>
                   <div className='flex items-center justify-between mb-2'>
                     <div className='text-sm font-semibold text-gray-800'>Grid</div>
                     <label className='inline-flex items-center gap-2 text-sm text-gray-700'>
@@ -490,15 +767,15 @@ export function MapPage() {
                   <input
                     type='range'
                     className='w-full cursor-pointer'
-                    min={5}
-                    max={50}
-                    step={1}
+                    min={500}
+                    max={2000}
+                    step={100}
                     value={gridSize}
                     onChange={(e) => setGridSize(Number(e.target.value))}
                   />
-                </div>
+                </div> */}
 
-                <div className='mb-6'>
+                {/* <div className='mb-6'>
                   <div className='text-sm font-semibold text-gray-800 mb-2'>Marked points</div>
                   {selectedPoints.length === 0 && (
                     <div className='text-xs text-gray-500'>No points selected. Click grid vertices to mark.</div>
@@ -516,9 +793,11 @@ export function MapPage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
-                <div className='mt-6 border-t pt-4'>
+                {/* Active wildfires moved to top */}
+
+                {/* <div className='mt-6 border-t pt-4'>
                   <div className='flex items-center justify-between'>
                     <div>
                       <div className='text-sm font-semibold text-gray-800'>Weather</div>
@@ -601,21 +880,96 @@ export function MapPage() {
                       </div>
                     </div>
                   )}
+                </div> */}
+                  </>
+                  )}
+
+                  {/* Processing results tab */}
+                  {activeTab === 'results' && (
+                    <div className='py-4 px-3 md:px-4'>
+                      <div className='mb-4'>
+                        <h3 className='text-lg font-bold mb-2' style={{ color: '#0f172a' }}>Analysis Results</h3>
+                        <p className='text-sm' style={{ color: '#6b7280' }}>Quantum-optimized wildfire containment strategy</p>
+                      </div>
+                      
+                      {/* Summary Cards */}
+                      <div className='grid grid-cols-2 gap-3 mb-4'>
+                        <div className='rounded-lg border p-3' style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
+                          <div className='text-xs font-medium mb-1' style={{ color: '#991b1b' }}>Fire Spread Risk</div>
+                          <div className='text-2xl font-bold' style={{ color: '#dc2626' }}>High</div>
+                        </div>
+                        <div className='rounded-lg border p-3' style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                          <div className='text-xs font-medium mb-1' style={{ color: '#14532d' }}>Containment Plan</div>
+                          <div className='text-2xl font-bold' style={{ color: '#16a34a' }}>Ready</div>
+                        </div>
+                      </div>
+                      
+                      {/* Fire Vectors */}
+                      <div className='mb-4 rounded-lg border p-3' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
+                        <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Fire Propagation Analysis</div>
+                        <div className='text-xs mb-2' style={{ color: '#6b7280' }}>{fireVectors.length} spread vectors identified</div>
+                        <div className='space-y-2'>
+                          {fireVectors.slice(0, 3).map((vec, idx) => (
+                            <div key={idx} className='flex items-center gap-2 text-xs p-2 rounded' style={{ backgroundColor: '#fef2f2' }}>
+                              <span className='inline-flex h-2 w-2 rounded-full' style={{ backgroundColor: '#dc2626' }}></span>
+                              <span style={{ color: '#374151' }}>Vector {idx + 1}: {vec.start.lat.toFixed(4)}, {vec.start.lng.toFixed(4)} → {vec.end.lat.toFixed(4)}, {vec.end.lng.toFixed(4)}</span>
+                            </div>
+                          ))}
+                          {fireVectors.length > 3 && (
+                            <div className='text-xs text-center pt-1' style={{ color: '#6b7280' }}>
+                              +{fireVectors.length - 3} more vectors
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Action Plans */}
+                      <div className='mb-4 rounded-lg border p-3' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
+                        <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Recommended Actions</div>
+                        <div className='space-y-2'>
+                          {actionPlans.slice(0, 3).map((plan, idx) => (
+                            <div key={idx} className='p-2 rounded text-xs' style={{ backgroundColor: '#f0fdf4', borderLeft: '3px solid #16a34a' }}>
+                              <div className='font-medium mb-1' style={{ color: '#14532d' }}>Action Point {idx + 1}</div>
+                              <div style={{ color: '#374151' }}>{plan.summary}</div>
+                              <div className='mt-1 text-[10px]' style={{ color: '#6b7280' }}>
+                                Location: {plan.at.lat.toFixed(5)}, {plan.at.lng.toFixed(5)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Back to Map Button */}
+                      <button
+                        className='w-full rounded-lg border px-4 py-2 text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors'
+                        style={{ borderColor: '#e5e7eb', color: '#374151' }}
+                        onClick={() => setActiveTab('controls')}
+                      >
+                        ← Back to Controls
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className='absolute left-0 right-0 bottom-0 border-t p-4' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
-                <button
-                  className='w-full inline-flex items-center justify-center gap-3 rounded-md px-4 py-3 text-base font-semibold shadow-sm disabled:opacity-60 disabled:cursor-not-allowed'
-                  style={{ backgroundColor: '#111827', color: '#ffffff' }}
-                  onClick={processImagesMapAsync}
-                  disabled={processing}
-                >
-                  <span className='relative inline-flex h-3 w-3'>
-                    <span className={`absolute inline-flex h-full w-full rounded-full ${processing ? 'animate-ping' : ''}`} style={{ backgroundColor: '#f59e0b', opacity: 0.7 }}></span>
-                    <span className='relative inline-flex rounded-full h-3 w-3' style={{ backgroundColor: '#f59e0b' }}></span>
-                  </span>
-                  {processing ? 'Processing…' : 'Process'}
-                </button>
+
+                {/* Process button - always visible at bottom */}
+                <div className='border-t p-3 md:p-4' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
+                  <button
+                    className='w-full inline-flex items-center justify-center gap-2 md:gap-3 rounded-md px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base font-semibold shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer'
+                    style={{
+                      backgroundColor: '#111827',
+                      color: '#ffffff',
+                      animation: selectedFireId && perimeterIdx >= Math.max(0, perimeterDays.length - 1) && !processing ? 'pulse-process 1.8s ease-in-out infinite' : undefined
+                    }}
+                    onClick={processImagesMapAsync}
+                    disabled={processing}
+                  >
+                    <span className='relative inline-flex h-2.5 w-2.5 md:h-3 md:w-3'>
+                      <span className={`absolute inline-flex h-full w-full rounded-full ${processing ? 'animate-ping' : ''}`} style={{ backgroundColor: '#f59e0b', opacity: 0.7 }}></span>
+                      <span className='relative inline-flex rounded-full h-2.5 w-2.5 md:h-3 md:w-3' style={{ backgroundColor: '#f59e0b' }}></span>
+                    </span>
+                    {processing ? 'Processing…' : 'Process'}
+                  </button>
+                </div>
               </div>
             </aside>
           </div>
@@ -624,6 +978,47 @@ export function MapPage() {
     </Layout>
   );
 }
+
+type CameraControllerHandle = {
+  moveTo: (target: google.maps.LatLngLiteral, opts?: { zoom?: number }) => void;
+  animateTo: (target: google.maps.LatLngLiteral, opts?: { durationMs?: number; zoom?: number }) => void;
+};
+
+type CameraControllerProps = object;
+
+const CameraController = forwardRef<CameraControllerHandle | null, CameraControllerProps>(function CameraController(_props, ref) {
+  const map = useMap();
+
+  useImperativeHandle(ref, () => ({
+    moveTo: (target: google.maps.LatLngLiteral, opts?: { zoom?: number }) => {
+      if (!map) return;
+      map.setCenter(target);
+      if (typeof opts?.zoom === 'number') {
+        map.setZoom(opts.zoom as number);
+      }
+    },
+    animateTo: (target: google.maps.LatLngLiteral, opts?: { durationMs?: number; zoom?: number }) => {
+      if (!map) return;
+      const start = map.getCenter();
+      if (!start) return;
+      const durationMs = Math.max(200, Math.min(6000, opts?.durationMs ?? 1800));
+      const startLat = start.lat();
+      const startLng = start.lng();
+      const dLat = target.lat - startLat;
+      const dLng = target.lng - startLng;
+      const t0 = performance.now();
+      const step = () => {
+        const p = Math.min(1, (performance.now() - t0) / durationMs);
+        const e = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p; // easeInOut
+        map.setCenter({ lat: startLat + dLat * e, lng: startLng + dLng * e });
+        if (p < 1) requestAnimationFrame(step); else if (typeof opts?.zoom === 'number') map.setZoom(opts.zoom as number);
+      };
+      requestAnimationFrame(step);
+    }
+  }), [map]);
+
+  return null;
+});
 
 function BoundsUpdater({ onBounds, cameraVersion }: { onBounds: (b: { north: number; south: number; east: number; west: number } | null) => void; cameraVersion: number }) {
   const map = useMap();
@@ -739,5 +1134,60 @@ const GPolyline = forwardRef<google.maps.Polyline | undefined, GPolylineProps>(f
   useImperativeHandle(ref, () => polyline ?? undefined, [polyline]);
   return null;
 });
+
+
+const FireDateMarkers = ({ coords, makeGPoint, makeGSize }: { coords: google.maps.LatLngLiteral[]; makeGPoint: (x: number, y: number) => google.maps.Point | undefined; makeGSize: (w: number, h: number) => google.maps.Size | undefined }) => {
+  return (
+    <>
+      {coords.map((pt, i) => (
+        <Marker
+          key={`fdm-${i}-${pt.lat}-${pt.lng}`}
+          position={pt}
+          clickable={false}
+          optimized={false}
+          icon={{
+            url: flameSmall,
+            anchor: makeGPoint(16, 32),
+            scaledSize: makeGSize(28, 28),
+          }}
+        />
+      ))}
+    </>
+  );
+};
+
+type GCircleProps = {
+  center: google.maps.LatLngLiteral;
+  radius: number;
+  strokeColor?: string;
+  strokeOpacity?: number;
+  strokeWeight?: number;
+  fillColor?: string;
+  fillOpacity?: number;
+};
+
+function GCircle(props: GCircleProps) {
+  const map = useMap();
+  const circleRef = useRef<google.maps.Circle | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    if (!circleRef.current) {
+      circleRef.current = new google.maps.Circle();
+    }
+    const circle = circleRef.current;
+    circle.setMap(map);
+    return () => {
+      circle.setMap(null);
+    };
+  }, [map]);
+
+  useMemo(() => {
+    if (!circleRef.current) return;
+    circleRef.current.setOptions(props);
+  }, [props]);
+
+  return null;
+}
 
 
