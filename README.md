@@ -21,3 +21,19 @@ Wildfires are a major environmental threat that can cause significant damage to 
 Quantum computing can be used to detect and manage wildfires more efficiently. Quantum computers can be used to analyze large amounts of data quickly and identify patterns that are not visible to traditional computers. This can help to improve the accuracy of wildfire detection and management.
 
 <br clear="left">
+
+The solution integrates a **ConvLSTM neural network** to **predict the spatial–temporal spread of wildfires**.  
+This architecture combines:
+- 🖼 **Convolutions (CNNs)** → to capture spatial features from satellite images.  
+- ⏱ **LSTMs (Recurrent nets)** → to capture temporal dynamics of the fire evolving over time.  
+
+This allows us to model **"where and how fast" the fire will spread** over the landscape.
+
+---
+
+### ConvLSTM Model Diagram
+
+<p align="center">
+  <img src="./images/convlstmDiagram.png" width="800" alt="ConvLSTM wildfire model"/>
+</p>
+
