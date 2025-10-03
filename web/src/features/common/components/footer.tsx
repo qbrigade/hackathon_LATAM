@@ -28,7 +28,7 @@ export function Footer() {
           </div>
         </div>
         <div className='text-sm mt-4'>
-          © {year} El Peruanista. Todos los derechos reservados.
+          © {year} QBrigade. Todos los derechos reservados.
         </div>
       </footer>
     </ContentLayout>

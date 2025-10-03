@@ -27,7 +27,7 @@ import { NotFoundPage } from '@common/pages/404';
 import { AuthProvider } from '@auth/providers/auth_provider';
 import { RouteGuard } from '@auth/guards/route-guards';
 
-export function PeruanistasRouter() {
+export function QBrigadeRouter() {
   useQueryFavicon();
   const { user } = useAuthStore();
   const retryAuthInterval = useRef<number>(0);
@@ -126,7 +126,7 @@ function QBrigadeRoot() {
           <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
           <RouteGuard>
             {/* <DonationWindow /> */}
-            <PeruanistasRouter />
+            <QBrigadeRouter />
           </RouteGuard>
           </APIProvider>
         </AuthProvider>
