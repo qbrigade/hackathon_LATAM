@@ -4,7 +4,7 @@
 <h3 align="center">Quantum-Enhanced Wildfire Prediction and Resource Optimization System</h3>
 
 <p align="center">
-  <a target="_blank" href="https://qbrigade.pages.dev/"><img src="https://img.shields.io/badge/🌐-Live_Demo-00d4ff?style=for-the-badge" /></a>
+  <a target="_blank" href="https://qbrigade.pages.dev/"><img src="https://img.shields.io/badge/🔗-Explore_Our_Official_Website-00d4ff?style=for-the-badge" /></a>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <strong>🚀 <a href="https://qbrigade.pages.dev/" target="_blank">Try the Live Demo</a></strong> | 
+  <strong>🔗 <a href="https://qbrigade.pages.dev/" target="_blank">Explore Our Official Website</a></strong> | 
   <a href="#overview">Overview</a> | 
   <a href="#installationsetup">Installation</a> | 
   <a href="#usage-examples">Usage</a> | 
