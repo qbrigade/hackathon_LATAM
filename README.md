@@ -35,7 +35,7 @@
 - [Our Solution](#our-solution)
 - [Algorithm Workflow](#algorithm-workflow)
 - [Repository Structure](#repository-structure)
-- [Installation/Setup](#installationsetup)
+- [Installation / Setup](#installation-setup)
 - [Data Sources](#data-sources)
 - [Features](#features)
 - [Technologies Used](#technologies-used)
@@ -44,7 +44,7 @@
 - [Contributing](#contributing)
 - [Acknowledgments](#acknowledgments)
 - [Contact](#contact)
-
+- 
 ## 🌍 Overview
 
 **Quantum Wildfire Brigade (QWB)** is an innovative solution developed to address wildfire containment and management using quantum computing principles combined with deep learning. This project aims to contribute to the **United Nations Sustainable Development Goals (SDGs)** 13 (Climate Action) and 15 (Life on Land).
