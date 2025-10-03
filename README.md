@@ -1,4 +1,4 @@
-![Moving clouds](./web/public/readme_banner.png)
+[![Moving clouds](./web/public/readme_banner.png)](https://qbrigade.pages.dev/)
 
 <h1 align="center">🔥 Quantum Wildfire Brigade (QWB)</h1>
 <h3 align="center">Quantum-Enhanced Wildfire Prediction and Resource Optimization System</h3>
