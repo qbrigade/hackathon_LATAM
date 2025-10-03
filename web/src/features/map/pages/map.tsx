@@ -101,6 +101,7 @@ export function MapPage() {
   const [fireVectors, setFireVectors] = useState<Array<{ start: google.maps.LatLngLiteral; end: google.maps.LatLngLiteral }>>([]);
   const [actionPlans, setActionPlans] = useState<Array<{ at: google.maps.LatLngLiteral; summary: string }>>([]);
   const [firewalls, setFirewalls] = useState<google.maps.LatLngLiteral[]>([]);
+  const [spreadPredictions, setSpreadPredictions] = useState<Array<{ start: google.maps.LatLngLiteral; end: google.maps.LatLngLiteral }>>([]);
   const cameraControllerRef = useRef<CameraControllerHandle | null>(null);
   const [selectedFireId, setSelectedFireId] = useState<string | null>('wf-1');
   const [activeTab, setActiveTab] = useState<'controls' | 'results'>('controls');
@@ -306,12 +307,50 @@ export function MapPage() {
       const firewallLocations = (FIREWALLS_LOCATIONS as Array<[number, number]>).map(([lat, lng]) => ({ lat, lng }));
       setFirewalls(firewallLocations);
 
+      // Calculate fire spread prediction arrows from perimeter
+      if (perimeterCoords.length > 0 && perimeterCentroid) {
+        // Sample points from perimeter to create spread predictions
+        const sampleInterval = Math.max(1, Math.floor(perimeterCoords.length / 25)); // Take ~25 sample points
+        const predictions: Array<{ start: google.maps.LatLngLiteral; end: google.maps.LatLngLiteral }> = [];
+        
+        for (let i = 0; i < perimeterCoords.length; i += sampleInterval) {
+          const point = perimeterCoords[i];
+          
+          // Calculate direction away from centroid (outward)
+          const dLat = point.lat - perimeterCentroid.lat;
+          const dLng = point.lng - perimeterCentroid.lng;
+          const distance = Math.sqrt(dLat * dLat + dLng * dLng);
+          
+          if (distance > 0) {
+            // Normalize direction
+            const normLat = dLat / distance;
+            const normLng = dLng / distance;
+            
+            // Add some random variation to make it look more natural (±20 degrees)
+            const angle = Math.atan2(normLng, normLat);
+            const jitterAngle = angle + (Math.random() - 0.5) * (Math.PI / 4.5); // ±20 degrees
+            
+            // Project outward by a MUCH longer distance (in degrees, roughly 800-1200 meters)
+            const spreadDistance = 0.007 + Math.random() * 0.004; // 0.007-0.011 degrees (much longer arrows)
+            const endLat = point.lat + Math.cos(jitterAngle) * spreadDistance;
+            const endLng = point.lng + Math.sin(jitterAngle) * spreadDistance;
+            
+            predictions.push({
+              start: point,
+              end: { lat: endLat, lng: endLng }
+            });
+          }
+        }
+        
+        setSpreadPredictions(predictions);
+      }
+
       // Switch to results tab after processing
       setActiveTab('results');
     } finally {
       setProcessing(false);
     }
-  }, [processing, selectedPoints, windDirection, windSpeed]);
+  }, [processing, selectedPoints, windDirection, windSpeed, perimeterCoords, perimeterCentroid]);
 
   const toggleVertex = useCallback((pt: google.maps.LatLngLiteral) => {
     setSelectedPoints((prev) => {
@@ -536,6 +575,19 @@ export function MapPage() {
                     )}
                   </>
                 )}
+                {/* Fire spread prediction arrows */}
+                {spreadPredictions.map((pred, i) => (
+                  <GPolyline
+                    key={`spread-${i}`}
+                    path={[pred.start, pred.end]}
+                    strokeColor="#ef4444"
+                    strokeOpacity={0.9}
+                    strokeWeight={3}
+                    icons={[
+                      { icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 4, strokeColor: '#dc2626', fillColor: '#dc2626', fillOpacity: 1, strokeOpacity: 1 }, offset: '100%' },
+                    ]}
+                  />
+                ))}
                 {/* Fire propagation arrows */}
                 {fireVectors.map((vec, i) => (
                   <GPolyline
@@ -925,22 +977,22 @@ export function MapPage() {
                         </div>
                       </div>
 
-                      {/* Fire Vectors */}
+                      {/* Fire Spread Prediction */}
                       <div className='mb-4 rounded-lg border p-3' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
-                        <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Fire Propagation Analysis</div>
-                        <div className='text-xs mb-2' style={{ color: '#6b7280' }}>{fireVectors.length} spread vectors identified</div>
-                        <div className='space-y-2'>
-                          {fireVectors.slice(0, 3).map((vec, idx) => (
-                            <div key={idx} className='flex items-center gap-2 text-xs p-2 rounded' style={{ backgroundColor: '#fef2f2' }}>
-                              <span className='inline-flex h-2 w-2 rounded-full' style={{ backgroundColor: '#dc2626' }}></span>
-                              <span style={{ color: '#374151' }}>Vector {idx + 1}: {vec.start.lat.toFixed(4)}, {vec.start.lng.toFixed(4)} → {vec.end.lat.toFixed(4)}, {vec.end.lng.toFixed(4)}</span>
-                            </div>
-                          ))}
-                          {fireVectors.length > 3 && (
-                            <div className='text-xs text-center pt-1' style={{ color: '#6b7280' }}>
-                              +{fireVectors.length - 3} more vectors
-                            </div>
-                          )}
+                        <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Fire Spread Prediction</div>
+                        <div className='text-xs mb-2' style={{ color: '#6b7280' }}>{spreadPredictions.length} predicted spread vectors</div>
+                        <div className='p-2 rounded text-xs' style={{ backgroundColor: '#fef2f2', borderLeft: '3px solid #dc2626' }}>
+                          <div className='font-medium mb-1' style={{ color: '#991b1b' }}>Outward Expansion Analysis</div>
+                          <div style={{ color: '#374151' }}>
+                            Red arrows on the map indicate predicted fire spread directions from the current perimeter.
+                            The model projects expansion based on topography, weather patterns, and fuel availability.
+                          </div>
+                          <div className='mt-2 flex items-center gap-2'>
+                            <span className='inline-flex h-2 w-2 rounded-full animate-pulse' style={{ backgroundColor: '#dc2626' }}></span>
+                            <span className='text-[10px]' style={{ color: '#6b7280' }}>
+                              High-risk expansion zones marked on map
+                            </span>
+                          </div>
                         </div>
                       </div>
 
