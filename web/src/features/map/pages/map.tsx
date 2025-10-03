@@ -312,36 +312,36 @@ export function MapPage() {
         // Sample points from perimeter to create spread predictions
         const sampleInterval = Math.max(1, Math.floor(perimeterCoords.length / 25)); // Take ~25 sample points
         const predictions: Array<{ start: google.maps.LatLngLiteral; end: google.maps.LatLngLiteral }> = [];
-        
+
         for (let i = 0; i < perimeterCoords.length; i += sampleInterval) {
           const point = perimeterCoords[i];
-          
+
           // Calculate direction away from centroid (outward)
           const dLat = point.lat - perimeterCentroid.lat;
           const dLng = point.lng - perimeterCentroid.lng;
           const distance = Math.sqrt(dLat * dLat + dLng * dLng);
-          
+
           if (distance > 0) {
             // Normalize direction
             const normLat = dLat / distance;
             const normLng = dLng / distance;
-            
+
             // Add some random variation to make it look more natural (±20 degrees)
             const angle = Math.atan2(normLng, normLat);
             const jitterAngle = angle + (Math.random() - 0.5) * (Math.PI / 4.5); // ±20 degrees
-            
+
             // Project outward by a MUCH longer distance (in degrees, roughly 800-1200 meters)
             const spreadDistance = 0.007 + Math.random() * 0.004; // 0.007-0.011 degrees (much longer arrows)
             const endLat = point.lat + Math.cos(jitterAngle) * spreadDistance;
             const endLng = point.lng + Math.sin(jitterAngle) * spreadDistance;
-            
+
             predictions.push({
               start: point,
               end: { lat: endLat, lng: endLng }
             });
           }
         }
-        
+
         setSpreadPredictions(predictions);
       }
 
@@ -1011,7 +1011,7 @@ export function MapPage() {
                         </div>
                       </div>
 
-                      {/* Action Plans */}
+                      {/* Action Plans
                       <div className='mb-4 rounded-lg border p-3' style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
                         <div className='text-sm font-semibold mb-2' style={{ color: '#111827' }}>Recommended Actions</div>
                         <div className='space-y-2'>
@@ -1025,7 +1025,7 @@ export function MapPage() {
                             </div>
                           ))}
                         </div>
-                      </div>
+                      </div> */}
 
                       {/* Back to Map Button */}
                       <button
