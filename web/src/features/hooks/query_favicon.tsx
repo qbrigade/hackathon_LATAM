@@ -9,7 +9,7 @@ export function useQueryFavicon() {
     const faviconLink = document.querySelector('link[rel~=\'icon\']') as HTMLLinkElement | null;
     if (!faviconLink) return;
 
-    const originalHref = '/favicon.ico';
+    const originalHref = '/favicon.png';
     const loadingHref = '/favicon-spinner.svg';
 
     faviconLink.href = isFetching > 0 || isMutating > 0 ? loadingHref : originalHref;
