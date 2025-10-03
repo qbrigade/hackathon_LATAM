@@ -35,7 +35,7 @@
 - [Our Solution](#our-solution)
 - [Algorithm Workflow](#algorithm-workflow)
 - [Repository Structure](#repository-structure)
-- [Installation / Setup](#installation-setup)
+- [Installation/Setup](#installation-setup)
 - [Data Sources](#data-sources)
 - [Features](#features)
 - [Technologies Used](#technologies-used)
