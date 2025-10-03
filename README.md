@@ -157,6 +157,47 @@ graph TB
    - Automated alerts and notifications
 
 ---
+## QUBO problem formulation
+
+We are given a 2D grid $G$ of dimension $a \times b$. Where each node is labeled as $(i, j) \in [1, a]\times [1, b]$. First we define some notation an therminology:
+
+
+- $S_0$ is a set of nodes that are burning at time $t = 0$.
+- $M$ is an $a \times b \times a \times b$ tensor. $M_{(i, j), (k, l)}$ is the probability that a node $(i, j)$ ignites $(k, l)$ given that node the $(i, j)$ is burning. We set $M_{(i, j), (i, j)} = 1$.
+- $P_{i, j}$ is an integer between $0$ and $R_m$ indicating the **risk** of burning for each node $(i, j)$, where $P_{i, j} = R_m$ indicates that the node is already burning. the probabiliyi $Pr_{i, j}$ that node $(i, j)$ burns can be computed using $M$ and $S_0$, and then we discretize the values to get integer risks.
+
+$$Pr_{(i, j)} = 1 - \\prod_{(k, l)}\\left( 1 - M_{(k, l), (i, j)} \\mathbb{I}_{(k, l) \\in S_0}\\right)$$
+
+- $W$ is the maximum nodes that can be defendend in a given time window.
+
+The expected amount of burning nodes are,
+    
+$$\mathbb{E}_t = \sum_{(i, j)}{P_{(i, j)}}$$
+
+We define a set $S$ as
+
+$$S = \{ \lceil \mathbb{E}_t \rceil + 1 \text{ nodes with highest probability of burning }\} \subset \text{ grid } G$$
+
+
+The variables are $d_{(i, j)}$ wich is 1 if we defend node $(i, j)$. We want to minimize the cost function:
+
+
+$$C = \sum_{(k, l)}\sum_{(i, j)} M_{(i, j), (k, l)} \mathbb{I}_{\{ (i, k) \in S \}} \mathbb{I}_{\{(k, l) \not\in S\}} (1 - d_{i, j})(1 - d_{k, l})$$
+
+
+Subject to
+
+$$\sum_{i, j} d_{i, j} \leq W$$
+$$d_{i, j}P_{i, j} \\leq R_p - 1$$
+
+This problem is easily translated to QUBO:
+    
+$$Q = \\sum_{(k, l)}\\sum_{(i, j)} M_{(i, j), (k, l)} \\mathbb{I}_{\\{ (i, k) \\in S \\}} \\mathbb{I}_{\\{(k, l) \\not\\in S\\}} (1 - d_{i, j})(1 - d_{k, l})$$
+$$P_1 = \\alpha \\left( \\sum_{i, j} d_{i, j} - \\left(W - 2^{\\lfloor \\log _2(W) \\rfloor} \\right)A_{i, j}^{\\lfloor \\log _2(W) \\rfloor + 1} - \\sum_{k = 0}^{\\lfloor \\log _2(W) \\rfloor} 2^{k}A_{i, j}^{k} \\right)$$
+$$P_2 = \\beta \\left( \\sum_{i, j} P_{i, j}d_{i, j} - \\left(R_m - 1 - 2^{\\lfloor \\log _2(R_m - 1) \\rfloor} \\right)A_{i, j}^{\\lfloor \\log _2(R_m - 1) \\rfloor + 1} - \\sum_{k = 0}^{\\lfloor \\log _2(R_m - 1) \\rfloor} 2^{k}A_{i, j}^{k} \\right)$$
+
+  
+
 
 ## 📂 Repository Structure
 
