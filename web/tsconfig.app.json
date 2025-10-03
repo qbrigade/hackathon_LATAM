@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    // NOTE: Temporarily disabling this becuase it is a common failure in the codebase
+    // "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@assets/*": ["./src/assets/*"],
+      "@utils/*": ["./src/features/common/utils/*"],
+      "@common/*": ["./src/features/common/*"],
+      "@home/*": ["./src/features/home/*"],
+      "@events/*": ["./src/features/events/*"],
+      "@publications/*": ["./src/features/publications/*"],
+      "@projects/*": ["./src/features/projects/*"],
+      "@megaprojects/*": ["./src/features/megaprojects/*"],
+      "@groups/*": ["./src/features/groups/*"],
+      "@auth/*": ["./src/features/auth/*"],
+      "@about/*": ["./src/features/about/*"],
+      "@db/*": ["./src/services/db/*"],
+      "@hooks/*": ["./src/features/hooks/*"],
+      "@profile/*": ["./src/features/profile/*"],
+    }
+  },
+  "include": ["src"]
+}

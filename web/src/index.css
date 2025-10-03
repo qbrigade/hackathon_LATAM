@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../src/assets/fonts/InterVariable.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Cargar la fuente Inter Bold */
+@font-face {
+  font-family: 'Inter';
+  src: url('../src/assets/fonts/InterVariable.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../src/assets/fonts/Inter-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* See tailwind variables here https://tailwindcss.com/docs/theme */
+@theme {
+  /* Black theme */
+  --color-primary: #0b0b0b; /* primary surfaces/buttons */
+  --color-primary-border: #1a1a1a;
+  --color-on-primary: #0f0f0f; /* navbar/surfaces */
+  --color-border: #1f1f1f;
+  --color-border2: #2a2a2a;
+  --color-border-active: #3a3a3a;
+
+  /* Horizontal padding for pages */
+  --spacing-page: 16px;
+}
+
+:root {
+  color-scheme: light;
+  font-size: 16px;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --spacing-page: 24px;
+  }
+}
+
+@media (min-width: 968px) {
+  :root {
+    --spacing-page: 32px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --spacing-page: 64px;
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --spacing-page: 64px;
+  }
+}
+
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  color: var(--font-color);
+}
+
+.loader {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #c9c9c9;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Shimmer animation for loading bars */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes marquee-x {
+  0% {
+    transform: translateX(0%);
+    /* transform: translateX(0%); */
+  }
+  100% {
+    transform: translateX(-54%);
+  }
+}
+
+.animate-marquee-x {
+  animation: marquee-x 7.9s ease-in-out forwards;
+}
+
+/*
+Clears the ‘X’ from Chrome
+https://medium.com/@rion.mrk/how-to-remove-x-icon-from-search-input-field-or-input-type-search-db3c808405fb
+*/
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration { display: none; }

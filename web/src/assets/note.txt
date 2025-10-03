@@ -1,0 +1,3 @@
+See the following for how to import assets (jpg, svg, png, etc.) in Vite:
+
+https://vite.dev/guide/assets
