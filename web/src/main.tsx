@@ -6,7 +6,6 @@ import { HomePage } from '@home/pages/home';
 import { MapPage } from './features/map/pages/map';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useQueryFavicon } from '@hooks/query_favicon';
-import { AboutPage } from '@about/pages/about';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 
 import 'react-day-picker/style.css';
@@ -82,7 +81,6 @@ export function QBrigadeRouter() {
       <CachedTabsRouter activePath={pathname} />
       {!isCachedTab(pathname) && (
         <Switch>
-          <Route path='/about' component={AboutPage} />
           <Route path='/signup' component={SignUpPage} />
           <Route path='/login' component={LoginPage} />
           <Route path='/confirmar-correo' component={ConfirmEmailPage} />
