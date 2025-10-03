@@ -8,6 +8,9 @@ from ml.model.model import FireSpreadPredictor
 from ml.data.split_data import FireSpreadDataset
 
 def load_model(model_path, device="cpu"):
+    """
+    Loads the pretrained model from the given path.
+    """
     ckpt = torch.load(model_path, map_location=device)
     model = FireSpreadPredictor(input_channels=3, hidden_dims=[32, 64, 32]).to(device)
     state_dict = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
@@ -42,17 +45,19 @@ def to_prob_map(pred):
 
 
 def predict(model, input_sequence, device="cpu"):
+    """
+    input_sequence: Tensor (B, T, C, H, W)
+    Returns model prediction.
+    """
     with torch.no_grad():
         input_sequence = input_sequence.to(device)
         out = model(input_sequence)
     return out
 
 
-def create_pixel_graph(prob_2d, connect8=False, bidirectional=False):
+def create_pixel_graph(prob_2d, bidirectional=False):
     """
     prob_2d: numpy array (H, W) with probabilities in [0,1].
-    connect8: if True, use 8-connectivity; else 4-connectivity.
-    bidirectional:add reverse edges too.
     """
     H, W = prob_2d.shape
     G = nx.DiGraph()
@@ -67,10 +72,7 @@ def create_pixel_graph(prob_2d, connect8=False, bidirectional=False):
                 probability=float(prob_2d[y, x])
             )
 
-    if connect8:
-        nbrs = [(0, 1), (1, 0), (1, 1), (1, -1)]
-    else:
-        nbrs = [(0, 1), (1, 0)]
+    nbrs = [(0, 1), (1, 0), (1, 1), (1, -1)]
 
     for y in range(H):
         for x in range(W):
@@ -88,6 +90,9 @@ def create_pixel_graph(prob_2d, connect8=False, bidirectional=False):
 
 
 def visualize_pixel_graph(prob_2d, G, sample_every=20):
+    """
+    Visualizes the probability heatmap, sampled pixel graph, and histogram of probabilities.
+    """
     H, W = prob_2d.shape
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
 
@@ -135,8 +140,6 @@ def save_graph_compatible(G, filename):
     nx.write_graphml(G_simple, filename)
     print(f"Graph saved: {filename}")
 
-
-
 def main():
     device = "cpu"  
 
@@ -158,7 +161,7 @@ def main():
 
         prob_2d = to_prob_map(pred)
 
-        G = create_pixel_graph(prob_2d, connect8=False, bidirectional=False)
+        G = create_pixel_graph(prob_2d, bidirectional=False)
 
         analyze_graph(G)
         visualize_pixel_graph(prob_2d, G, sample_every=20)
@@ -166,7 +169,6 @@ def main():
         save_graph_compatible(G, f"pixel_graph_sequence_{batch_idx+1}.graphml")
 
         break  
-
 
 if __name__ == "__main__":
     main()
