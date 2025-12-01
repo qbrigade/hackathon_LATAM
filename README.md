@@ -20,7 +20,8 @@
 </p>
 
 <p align="center">
-  <strong>🔗 <a href="https://qbrigade.pages.dev/" target="_blank">Explore Our Official Website</a></strong> | 
+  <strong>🔗 <a href="https://qbrigade.pages.dev/" target="_blank">Explore Our Official Website</a></strong> |
+  <strong><a href="http://ingenieria.um.edu.uy/quantum_hackaton/" target="_blank">Hackathon Website</a></strong> | 
   <a href="#overview">Overview</a> | 
   <a href="#installation-setup">Installation</a> | 
   <a href="#usage-examples">Usage</a> | 
